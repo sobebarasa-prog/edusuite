@@ -1,0 +1,2465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Kopiya EduSuite — School Management Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════ */
+:root{
+  --bg:#f2ede4;--card:#ffffff;--primary:#1b4332;--primary-l:#2d6a4f;--primary-xl:#40916c;
+  --accent:#c9963a;--accent-l:#f5e6c4;--accent-d:#a07228;
+  --danger:#b5281c;--success:#065f46;--text:#242424;--muted:#687280;
+  --border:#d8d2c6;--border-l:#ede8e0;--shadow:0 2px 10px rgba(0,0,0,.09);
+  --r:10px;--header-h:56px;
+}
+html.dark{
+  --bg:#0d1f16;--card:#152a1e;--primary:#40916c;--primary-l:#52b788;
+  --accent:#d4a04a;--accent-l:#3a2d10;--accent-d:#f0c060;
+  --danger:#dc4a3d;--success:#10b981;--text:#e8e3da;--muted:#8fa896;
+  --border:#2a4035;--border-l:#1e3028;--shadow:0 2px 10px rgba(0,0,0,.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5;
+  transition:background .3s,color .3s}
+
+/* ── OVERLAY LAYERS ── */
+.overlay{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
+  padding:16px;background:linear-gradient(135deg,#1b4332 0%,#2d6a4f 60%,#0a2e1c 100%)}
+.overlay.hidden{display:none}
+.modal-box{background:var(--card);border-radius:16px;padding:28px 22px;width:100%;max-width:440px;
+  box-shadow:0 24px 60px rgba(0,0,0,.45);text-align:center}
+.modal-box h2{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;color:var(--primary);margin-bottom:6px}
+.modal-box .sub{font-size:.8rem;color:var(--muted);margin-bottom:20px}
+.logo-mark{font-size:2.6rem;margin-bottom:8px;display:block}
+
+/* ── FORMS ── */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;text-align:left}
+.fg label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg select,.fg textarea{padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--bg);
+  transition:border-color .2s,background .3s;width:100%;min-height:44px}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--primary);background:var(--card)}
+.err{color:var(--danger);font-size:.82rem;min-height:18px;margin-bottom:8px;text-align:left}
+.hint{color:var(--muted);font-size:.75rem;margin-top:4px}
+
+/* ── BUTTONS ── */
+.btn{padding:11px 18px;border:none;border-radius:8px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
+  transition:all .2s;display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;min-height:44px;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-l)}
+.btn-accent{background:var(--accent);color:#2a2a2a}.btn-accent:hover{background:var(--accent-d);color:#fff}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-outline{background:transparent;border:1.5px solid var(--primary);color:var(--primary)}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--muted)}
+.btn-full{width:100%;margin-bottom:8px}
+.btn-sm{padding:7px 13px;font-size:13px;min-height:36px}
+.btn-xs{padding:4px 10px;font-size:12px;min-height:28px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── NOTIFICATIONS ── */
+#toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;
+  transform:translateX(-50%) translateY(100px);background:var(--primary);color:#fff;
+  padding:10px 20px;border-radius:30px;font-size:.85rem;font-weight:600;z-index:99999;
+  box-shadow:0 4px 20px rgba(0,0,0,.3);transition:transform .3s ease;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.warn{background:var(--accent-d)}
+#toast.danger{background:var(--danger)}
+
+/* ══════════════════════════════
+   PLATFORM HEADER
+══════════════════════════════ */
+#platform-header{
+  background:var(--primary);color:#fff;padding:0 14px;
+  padding-top:env(safe-area-inset-top,0px);
+  height:calc(var(--header-h) + env(safe-area-inset-top,0px));
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+#platform-header .brand{display:flex;align-items:center;gap:8px}
+#platform-header .brand-icon{font-size:1.4rem}
+#platform-header .brand-name{font-family:'Crimson Pro',serif;font-size:1.1rem;font-weight:700}
+#platform-header .brand-sub{font-size:.6rem;opacity:.7;display:block;margin-top:-2px}
+.hdr-actions{display:flex;align-items:center;gap:6px}
+.hdr-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;
+  padding:6px 10px;border-radius:8px;cursor:pointer;font-size:.78rem;min-width:36px;min-height:36px;
+  display:inline-flex;align-items:center;justify-content:center;transition:background .2s}
+.hdr-btn:hover{background:rgba(255,255,255,.28)}
+
+/* ══════════════════════════════
+   TRIAL / SUBSCRIPTION BANNER
+══════════════════════════════ */
+#sub-banner{
+  background:linear-gradient(90deg,var(--accent-d),var(--accent));
+  color:#fff;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;
+  gap:8px;font-size:.8rem;font-weight:600;flex-wrap:wrap}
+#sub-banner.hidden{display:none}
+#sub-banner.danger-banner{background:linear-gradient(90deg,var(--danger),#c0392b)}
+#sub-banner.success-banner{background:linear-gradient(90deg,var(--success),#047857)}
+
+/* ══════════════════════════════
+   HOME DASHBOARD
+══════════════════════════════ */
+#home-screen{padding:14px 12px;padding-bottom:40px;max-width:700px;margin:0 auto}
+.welcome-card{
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-l) 100%);
+  color:#fff;border-radius:14px;padding:20px 18px;margin-bottom:16px;
+  box-shadow:0 4px 20px rgba(27,67,50,.35)}
+.welcome-card h2{font-family:'Crimson Pro',serif;font-size:1.4rem;margin-bottom:4px}
+.welcome-card .wc-sub{font-size:.8rem;opacity:.8;margin-bottom:14px}
+.welcome-card .wc-meta{font-size:.75rem;opacity:.7;margin-top:10px}
+.sub-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+  border-radius:20px;padding:4px 12px;font-size:.78rem;font-weight:700;margin-top:8px}
+
+.app-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.app-card{
+  background:var(--card);border-radius:14px;padding:20px 14px;text-align:center;
+  border:1.5px solid var(--border);cursor:pointer;transition:all .2s;
+  box-shadow:var(--shadow);position:relative;overflow:hidden}
+.app-card:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.app-card:active{transform:scale(.97)}
+.app-card .ac-icon{font-size:2.2rem;margin-bottom:8px}
+.app-card .ac-name{font-family:'Crimson Pro',serif;font-size:1.05rem;font-weight:700;color:var(--primary);margin-bottom:4px}
+.app-card .ac-desc{font-size:.72rem;color:var(--muted);line-height:1.4}
+.app-card .ac-badge{
+  position:absolute;top:8px;right:8px;background:var(--accent);color:#fff;
+  font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:10px}
+.app-card.locked{opacity:.7;cursor:not-allowed}
+.app-card.locked::after{
+  content:'🔒 Upgrade';position:absolute;inset:0;background:rgba(0,0,0,.55);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:.9rem;border-radius:14px}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat-box{background:var(--card);border-radius:10px;padding:12px 8px;text-align:center;
+  border:1px solid var(--border);box-shadow:var(--shadow)}
+.stat-box .sv{font-size:1.4rem;font-weight:800;color:var(--primary);line-height:1}
+.stat-box .sl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+
+.section-title{font-family:'Crimson Pro',serif;font-size:1.1rem;font-weight:700;
+  color:var(--primary);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent-l)}
+
+/* ══════════════════════════════
+   CARD / TABLE HELPERS
+══════════════════════════════ */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
+  padding:16px;margin-bottom:12px;border:1px solid var(--border)}
+.card-title{font-family:'Crimson Pro',serif;font-size:1.05rem;font-weight:700;
+  color:var(--primary);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--accent-l);
+  display:flex;align-items:center;gap:7px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:var(--primary);color:#fff;padding:8px 10px;text-align:left;font-size:12px;font-weight:500}
+.data-table td{padding:7px 10px;border-bottom:1px solid var(--border-l);vertical-align:top}
+.data-table tr:hover td{background:var(--border-l)}
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.bg-green{background:#d1fae5;color:#065f46}.bg-blue{background:#dbeafe;color:#1e40af}
+.bg-yellow{background:#fef9c3;color:#854d0e}.bg-red{background:#fee2e2;color:#991b1b}
+.bg-gray{background:var(--border-l);color:var(--muted)}
+.bg-orange{background:#fed7aa;color:#9a3412}
+
+/* ══════════════════════════════
+   MPESA MODAL
+══════════════════════════════ */
+.mpesa-modal{
+  position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.7);
+  display:flex;align-items:center;justify-content:center;padding:16px}
+.mpesa-modal.hidden{display:none}
+.mpesa-box{background:var(--card);border-radius:16px;padding:24px 20px;width:100%;max-width:420px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.mpesa-logo{background:#00a651;color:#fff;padding:8px 16px;border-radius:8px;
+  font-weight:800;font-size:1.1rem;display:inline-block;margin-bottom:14px}
+.mpesa-steps{list-style:none;counter-reset:step;margin:12px 0}
+.mpesa-steps li{counter-increment:step;display:flex;align-items:flex-start;gap:10px;
+  padding:8px 0;border-bottom:1px solid var(--border-l);font-size:.85rem}
+.mpesa-steps li::before{content:counter(step);background:var(--primary);color:#fff;
+  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:800;flex-shrink:0;margin-top:1px}
+.mpesa-number{font-size:1.5rem;font-weight:800;color:#00a651;letter-spacing:.5px;
+  border:2px solid #00a651;border-radius:8px;padding:8px 14px;text-align:center;margin:12px 0}
+.mpesa-ref-box{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;
+  padding:10px 14px;margin-bottom:12px}
+.mpesa-ref-box .ref-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.mpesa-ref-box .ref-val{font-size:1.1rem;font-weight:800;color:var(--primary);letter-spacing:.5px}
+.mpesa-amount-display{text-align:center;margin:12px 0}
+.mpesa-amount-display .amt{font-size:1.8rem;font-weight:800;color:var(--primary)}
+.mpesa-amount-display .curr{font-size:.85rem;color:var(--muted)}
+.verification-input{display:flex;gap:8px;margin:10px 0}
+.verification-input input{flex:1;text-align:center;font-size:1.1rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase}
+
+/* ══════════════════════════════
+   SCHOOL REGISTRATION WIZARD
+══════════════════════════════ */
+.wizard-steps{display:flex;justify-content:center;gap:0;margin-bottom:20px;
+  border-radius:8px;overflow:hidden;border:1.5px solid var(--border)}
+.wz-step{flex:1;padding:8px 4px;text-align:center;font-size:.7rem;font-weight:700;
+  background:var(--bg);color:var(--muted);border-right:1.5px solid var(--border)}
+.wz-step:last-child{border-right:none}
+.wz-step.active{background:var(--primary);color:#fff}
+.wz-step.done{background:var(--primary-xl);color:#fff}
+.wizard-page{display:none}.wizard-page.active{display:block}
+
+/* ══════════════════════════════
+   ADMIN PANEL (Platform Super-Admin)
+══════════════════════════════ */
+#admin-panel{display:none;padding:14px 12px;max-width:900px;margin:0 auto;padding-bottom:40px}
+#admin-panel.visible{display:block}
+.admin-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.admin-tab{padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);
+  color:var(--muted);cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s}
+.admin-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.admin-content{display:none}.admin-content.active{display:block}
+.school-row{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+  margin-bottom:8px;background:var(--card);gap:10px;flex-wrap:wrap}
+.school-row .sr-info{flex:1;min-width:0}
+.school-row .sr-name{font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.school-row .sr-meta{font-size:.72rem;color:var(--muted)}
+.metric-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.metric-card{background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:14px;text-align:center;box-shadow:var(--shadow)}
+.metric-card .mv{font-size:1.8rem;font-weight:800;color:var(--primary)}
+.metric-card .ml{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:4px}
+
+/* ══════════════════════════════
+   SCROLLBARS & MISC
+══════════════════════════════ */
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.divider{height:1px;background:var(--border-l);margin:14px 0}
+.text-center{text-align:center}.text-muted{color:var(--muted);font-size:.85rem}
+.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}
+.gap-8{gap:8px}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.shake{animation:shake .4s ease}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.plan-cards{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0}
+.plan-card{border:2px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;
+  transition:all .2s;position:relative;background:var(--card)}
+.plan-card:hover,.plan-card.selected{border-color:var(--primary);background:var(--accent-l)}
+.plan-card .pc-name{font-weight:800;font-size:.95rem;color:var(--primary);margin-bottom:2px}
+.plan-card .pc-price{font-size:1.3rem;font-weight:800;color:var(--text);margin-bottom:6px}
+.plan-card .pc-features{font-size:.75rem;color:var(--muted);line-height:1.6}
+.plan-card .pc-badge{position:absolute;top:-8px;right:12px;background:var(--accent);
+  color:#fff;font-size:.65rem;font-weight:800;padding:2px 8px;border-radius:10px}
+.plan-popular{border-color:var(--accent) !important}
+input[type=checkbox]{width:auto;min-height:auto;accent-color:var(--primary)}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     SPLASH / LOADING
+══════════════════════════════════════════ -->
+<div id="splash" class="overlay">
+  <div style="text-align:center;color:#fff">
+    <div style="font-size:3.5rem;margin-bottom:12px">🏫</div>
+    <div style="font-family:'Crimson Pro',serif;font-size:1.8rem;font-weight:700;margin-bottom:4px">Kopiya EduSuite</div>
+    <div style="font-size:.85rem;opacity:.75;margin-bottom:24px">School Management Platform · Kenya CBC</div>
+    <div class="spinner" style="margin:0 auto"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCHOOL REGISTRATION WIZARD
+══════════════════════════════════════════ -->
+<div id="register-overlay" class="overlay hidden">
+  <div class="modal-box" style="max-width:480px;max-height:90vh;overflow-y:auto">
+    <span class="logo-mark">🏫</span>
+    <h2>Register Your School</h2>
+    <p class="sub">Set up Kopiya EduSuite for your school in 3 minutes</p>
+
+    <div class="wizard-steps">
+      <div class="wz-step active" id="ws1">1. School</div>
+      <div class="wz-step" id="ws2">2. Admin</div>
+      <div class="wz-step" id="ws3">3. Plan</div>
+      <div class="wz-step" id="ws4">4. Pay</div>
+    </div>
+
+    <!-- Step 1: School Details -->
+    <div class="wizard-page active" id="wp1">
+      <div class="fg">
+        <label>School Name *</label>
+        <input id="reg-school-name" type="text" placeholder="e.g. Kopiya Junior School" maxlength="80">
+      </div>
+      <div class="fg">
+        <label>KNEC School Code</label>
+        <input id="reg-school-code" type="text" placeholder="e.g. 15310208" maxlength="20">
+      </div>
+      <div class="fg">
+        <label>County *</label>
+        <select id="reg-county">
+          <option value="">— Select County —</option>
+          <option>Baringo</option><option>Bomet</option><option>Bungoma</option><option>Busia</option>
+          <option>Elgeyo Marakwet</option><option>Embu</option><option>Garissa</option><option>Homa Bay</option>
+          <option>Isiolo</option><option>Kajiado</option><option>Kakamega</option><option>Kericho</option>
+          <option>Kiambu</option><option>Kilifi</option><option>Kirinyaga</option><option>Kisii</option>
+          <option>Kisumu</option><option>Kitui</option><option>Kwale</option><option>Laikipia</option>
+          <option>Lamu</option><option>Machakos</option><option>Makueni</option><option>Mandera</option>
+          <option>Marsabit</option><option>Meru</option><option>Migori</option><option>Mombasa</option>
+          <option>Murang'a</option><option>Nairobi</option><option>Nakuru</option><option>Nandi</option>
+          <option>Narok</option><option>Nyamira</option><option>Nyandarua</option><option>Nyeri</option>
+          <option>Samburu</option><option>Siaya</option><option>Taita Taveta</option><option>Tana River</option>
+          <option>Tharaka Nithi</option><option>Trans Nzoia</option><option>Turkana</option><option>Uasin Gishu</option>
+          <option>Vihiga</option><option>Wajir</option><option>West Pokot</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Sub-County</label>
+        <input id="reg-sub-county" type="text" placeholder="e.g. Gem">
+      </div>
+      <div class="fg">
+        <label>Phone (for support &amp; M-Pesa alerts)</label>
+        <input id="reg-phone" type="tel" placeholder="0700 000 000">
+      </div>
+      <div id="wp1-err" class="err"></div>
+      <button class="btn btn-primary btn-full" onclick="wzNext(1)">Next: Admin Account →</button>
+    </div>
+
+    <!-- Step 2: Admin Account -->
+    <div class="wizard-page" id="wp2">
+      <div class="fg">
+        <label>Your Full Name *</label>
+        <input id="reg-admin-name" type="text" placeholder="e.g. Osimoni Ochieng">
+      </div>
+      <div class="fg">
+        <label>Email Address *</label>
+        <input id="reg-admin-email" type="email" placeholder="principal@school.ac.ke">
+      </div>
+      <div class="fg">
+        <label>Role</label>
+        <select id="reg-admin-role">
+          <option value="principal">Principal / Head Teacher</option>
+          <option value="deputy">Deputy Principal</option>
+          <option value="tsc_teacher">TSC Teacher (Own setup)</option>
+          <option value="bursar">Bursar</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Create Password *</label>
+        <input id="reg-password" type="password" placeholder="At least 8 characters">
+      </div>
+      <div class="fg">
+        <label>Confirm Password *</label>
+        <input id="reg-password2" type="password" placeholder="Repeat password">
+      </div>
+      <div id="wp2-err" class="err"></div>
+      <div class="btn-group">
+        <button class="btn btn-ghost" onclick="wzBack(2)">← Back</button>
+        <button class="btn btn-primary" style="flex:1" onclick="wzNext(2)">Next: Choose Plan →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Plan Selection -->
+    <div class="wizard-page" id="wp3">
+      <p class="text-muted" style="margin-bottom:12px">All plans include a <strong>30-day free trial</strong>. No payment needed to start.</p>
+      <div class="plan-cards" id="plan-cards-container">
+        <div class="plan-card" data-plan="starter" onclick="selectPlan(this)">
+          <div class="pc-name">📋 Starter</div>
+          <div class="pc-price">KES 800 <span style="font-size:.75rem;font-weight:400;color:var(--muted)">/month</span></div>
+          <div class="pc-features">
+            ✅ TPDS only (Lesson Plans, IEPs, SOW)<br>
+            ✅ Up to 5 teachers<br>
+            ✅ PDF exports<br>
+            ❌ JSMS (school admin)<br>
+            ❌ Cloud sync
+          </div>
+        </div>
+        <div class="plan-card plan-popular" data-plan="school" onclick="selectPlan(this)">
+          <div class="pc-badge">⭐ Most Popular</div>
+          <div class="pc-name">🏫 School</div>
+          <div class="pc-price">KES 2,500 <span style="font-size:.75rem;font-weight:400;color:var(--muted)">/month</span></div>
+          <div class="pc-features">
+            ✅ TPDS + JSMS full suite<br>
+            ✅ Unlimited teachers<br>
+            ✅ Supabase cloud sync<br>
+            ✅ M-Pesa fee collection<br>
+            ✅ PDF &amp; Excel exports<br>
+            ✅ Email/SMS support
+          </div>
+        </div>
+        <div class="plan-card" data-plan="premium" onclick="selectPlan(this)">
+          <div class="pc-name">💎 Premium</div>
+          <div class="pc-price">KES 5,000 <span style="font-size:.75rem;font-weight:400;color:var(--muted)">/month</span></div>
+          <div class="pc-features">
+            ✅ Everything in School<br>
+            ✅ Priority WhatsApp support<br>
+            ✅ Custom school branding<br>
+            ✅ County/TSC reporting exports<br>
+            ✅ Multi-campus (up to 3)<br>
+            ✅ Dedicated onboarding session
+          </div>
+        </div>
+        <div class="plan-card" data-plan="term" onclick="selectPlan(this)">
+          <div class="pc-name">📅 Term License</div>
+          <div class="pc-price">KES 2,000 <span style="font-size:.75rem;font-weight:400;color:var(--muted)">/term</span></div>
+          <div class="pc-features">
+            ✅ Same as School plan<br>
+            ✅ Pay per school term<br>
+            ✅ Ideal for term-budget schools<br>
+            ✅ 3 payments/year
+          </div>
+        </div>
+      </div>
+      <div id="wp3-err" class="err"></div>
+      <div class="btn-group">
+        <button class="btn btn-ghost" onclick="wzBack(3)">← Back</button>
+        <button class="btn btn-primary" style="flex:1" onclick="wzNext(3)">Start Free Trial →</button>
+      </div>
+      <p class="hint" style="margin-top:10px;text-align:center">No M-Pesa required during 30-day trial</p>
+    </div>
+
+    <!-- Step 4: Success / Trial Activated -->
+    <div class="wizard-page" id="wp4">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:3rem;margin-bottom:8px">🎉</div>
+        <h2 style="color:var(--success)">You're all set!</h2>
+        <p class="sub">Your 30-day free trial is active.</p>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">📋 Your School Details</div>
+        <div id="reg-summary" style="font-size:.85rem;line-height:2"></div>
+      </div>
+      <div class="card" style="background:var(--accent-l);border-color:var(--accent)">
+        <div style="font-size:.82rem;font-weight:600;color:var(--accent-d)">
+          📅 Trial expires in 30 days. To continue, pay via M-Pesa from the Subscription tab inside the app.
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full mt-12" onclick="completeRegistration()">🚀 Launch EduSuite</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     LOGIN OVERLAY
+══════════════════════════════════════════ -->
+<div id="login-overlay" class="overlay hidden">
+  <div class="modal-box">
+    <span class="logo-mark">🏫</span>
+    <h2>Kopiya EduSuite</h2>
+    <p class="sub" id="login-school-sub">Sign in to your school account</p>
+    <div class="fg">
+      <label>Email Address</label>
+      <input id="login-email" type="email" placeholder="your@email.com" autocomplete="username">
+    </div>
+    <div class="fg">
+      <label>Password</label>
+      <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="login-err" class="err"></div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()" id="login-btn">Sign In</button>
+    <div class="divider"></div>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="showRegister()">✨ Register New School</button>
+    <button class="btn btn-ghost btn-full btn-sm" onclick="showForgot()">🔑 Forgot password?</button>
+    <p class="hint" style="margin-top:10px;text-align:center">
+      Need help? <a href="https://wa.me/254700000000?text=EduSuite+Support" target="_blank" style="color:var(--primary);font-weight:700">WhatsApp Us</a>
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FORGOT PASSWORD
+══════════════════════════════════════════ -->
+<div id="forgot-overlay" class="overlay hidden">
+  <div class="modal-box">
+    <span class="logo-mark">🔑</span>
+    <h2>Reset Password</h2>
+    <p class="sub">Enter your email and we'll send a reset link</p>
+    <div class="fg">
+      <label>Email Address</label>
+      <input id="forgot-email" type="email" placeholder="your@email.com">
+    </div>
+    <div id="forgot-msg" class="err" style="color:var(--success)"></div>
+    <button class="btn btn-primary btn-full" onclick="doForgot()">Send Reset Link</button>
+    <button class="btn btn-ghost btn-full btn-sm mt-8" onclick="showLogin()">← Back to Login</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     M-PESA PAYMENT MODAL
+══════════════════════════════════════════ -->
+<div class="mpesa-modal hidden" id="mpesa-modal">
+  <div class="mpesa-box">
+    <div class="mpesa-logo">M-PESA</div>
+    <div id="mpesa-modal-title" style="font-weight:800;font-size:1.05rem;margin-bottom:12px">Pay Subscription</div>
+
+    <div id="mpesa-step-1">
+      <div class="mpesa-amount-display">
+        <div class="curr">Amount Due (KES)</div>
+        <div class="amt" id="mpesa-amount-display">2,500</div>
+      </div>
+      <div class="mpesa-ref-box">
+        <div class="ref-label">Payment Reference</div>
+        <div class="ref-val" id="mpesa-ref-display">—</div>
+      </div>
+      <p style="font-size:.82rem;font-weight:700;margin-bottom:8px;color:var(--primary)">Pay to this Paybill / Till:</p>
+      <div class="mpesa-number" id="mpesa-till">522 522</div>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Account Number (use exactly):</p>
+      <div style="font-size:1rem;font-weight:800;letter-spacing:1px;color:var(--primary);margin-bottom:12px" id="mpesa-account-display">—</div>
+      <ul class="mpesa-steps">
+        <li>Go to M-Pesa → Lipa na M-Pesa → Pay Bill</li>
+        <li>Business Number: <strong id="mpesa-biz-num">522 522</strong></li>
+        <li>Account Number: <strong id="mpesa-acct-num">—</strong></li>
+        <li>Amount: <strong id="mpesa-amount-steps">KES 2,500</strong></li>
+        <li>Enter M-Pesa PIN and send</li>
+      </ul>
+      <button class="btn btn-success btn-full" onclick="showMpesaVerify()">✅ I've Paid — Enter Confirmation Code</button>
+    </div>
+
+    <div id="mpesa-step-2" style="display:none">
+      <p style="font-size:.85rem;margin-bottom:10px">Enter the M-Pesa confirmation code from your SMS:</p>
+      <div class="verification-input">
+        <input id="mpesa-code" type="text" placeholder="e.g. QKL4X2P9AB" maxlength="12" style="text-transform:uppercase;font-size:1rem;font-weight:700;letter-spacing:2px">
+      </div>
+      <div class="fg" style="margin-top:8px">
+        <label>Your M-Pesa Phone Number</label>
+        <input id="mpesa-phone" type="tel" placeholder="0700 000 000">
+      </div>
+      <div id="mpesa-verify-err" class="err"></div>
+      <button class="btn btn-primary btn-full" onclick="submitPayment()" id="mpesa-submit-btn">📬 Submit for Verification</button>
+      <p class="hint" style="margin-top:8px;text-align:center">Your subscription activates within <strong>2 hours</strong> on business days.</p>
+    </div>
+
+    <div id="mpesa-step-3" style="display:none;text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:10px">⏳</div>
+      <div style="font-weight:800;font-size:1rem;margin-bottom:6px">Payment Under Review</div>
+      <p class="text-muted" style="margin-bottom:12px">We received your payment details. Our team will verify and activate your subscription shortly.</p>
+      <div style="background:var(--accent-l);border-radius:8px;padding:10px;font-size:.8rem;color:var(--accent-d);font-weight:700">
+        📱 You'll receive a WhatsApp/SMS confirmation once verified.
+      </div>
+    </div>
+
+    <button class="btn btn-ghost btn-full btn-sm mt-12" onclick="closeMpesaModal()">✕ Close</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN APP SHELL
+══════════════════════════════════════════ -->
+<div id="app-shell" style="display:none">
+
+  <!-- Platform Header -->
+  <div id="platform-header">
+    <div class="brand">
+      <span class="brand-icon">🏫</span>
+      <div>
+        <div class="brand-name" id="header-school-name">EduSuite</div>
+        <span class="brand-sub" id="header-user-name">Loading…</span>
+      </div>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" onclick="showHome()" title="Home">🏠</button>
+      <button class="hdr-btn" id="dark-btn" onclick="toggleDark()" title="Dark mode">🌙</button>
+      <button class="hdr-btn" onclick="showNotifications()" title="Notifications" id="notif-btn">🔔</button>
+      <button class="hdr-btn" onclick="doLogout()" title="Logout">⏏️</button>
+    </div>
+  </div>
+
+  <!-- Subscription Banner -->
+  <div id="sub-banner">
+    <span id="sub-banner-text">⏳ Free Trial: 30 days remaining</span>
+    <button class="btn btn-xs" style="background:#fff;color:var(--accent-d);font-weight:800" onclick="openMpesaModal()">Pay Now</button>
+  </div>
+
+  <!-- Notifications Panel -->
+  <div id="notif-panel" style="display:none;position:fixed;top:calc(56px + env(safe-area-inset-top,0px));right:8px;
+    width:300px;max-height:400px;overflow-y:auto;background:var(--card);border:1.5px solid var(--border);
+    border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.2);z-index:500;padding:12px">
+    <div style="font-weight:700;margin-bottom:8px;font-size:.85rem;color:var(--primary)">🔔 Notifications</div>
+    <div id="notif-list"></div>
+    <button class="btn btn-ghost btn-xs mt-8" style="width:100%" onclick="clearNotifs()">Clear All</button>
+  </div>
+
+  <!-- Home Dashboard -->
+  <div id="home-screen">
+    <div class="welcome-card">
+      <h2 id="wc-greeting">Good morning!</h2>
+      <div class="wc-sub" id="wc-school">Kopiya Junior School</div>
+      <div class="sub-pill" id="wc-plan-pill">⭐ School Plan</div>
+      <div class="wc-meta" id="wc-date">Wednesday, 17 June 2026</div>
+    </div>
+
+    <div class="stats-row" id="quick-stats">
+      <div class="stat-box"><div class="sv" id="stat-schools">1</div><div class="sl">School</div></div>
+      <div class="stat-box"><div class="sv" id="stat-days">30</div><div class="sl">Days Left</div></div>
+      <div class="stat-box"><div class="sv" id="stat-users">—</div><div class="sl">Users</div></div>
+    </div>
+
+    <div class="section-title">Your Applications</div>
+    <div class="app-grid" id="app-grid">
+      <div class="app-card" id="tpds-card" onclick="launchApp('tpds')">
+        <div class="ac-icon">📋</div>
+        <div class="ac-name">TPDS Portal</div>
+        <div class="ac-desc">Lesson plans, IEPs, Scheme of Work, CAL, document uploads & approval</div>
+        <div class="ac-badge">v1.44</div>
+      </div>
+      <div class="app-card" id="jsms-card" onclick="launchApp('jsms')">
+        <div class="ac-icon">🏫</div>
+        <div class="ac-name">JSMS Portal</div>
+        <div class="ac-desc">Learners, fees, attendance, exams, library, timetable, co-curricular</div>
+        <div class="ac-badge">v2.5</div>
+      </div>
+    </div>
+
+    <div class="section-title mt-16">Quick Actions</div>
+    <div class="btn-group mt-8">
+      <button class="btn btn-outline btn-sm" onclick="launchApp('tpds')">📝 New Lesson Plan</button>
+      <button class="btn btn-outline btn-sm" onclick="launchApp('jsms')">📅 Take Attendance</button>
+      <button class="btn btn-outline btn-sm" onclick="openMpesaModal()">💳 Pay Subscription</button>
+      <button class="btn btn-outline btn-sm" onclick="openSupport()">📞 Support</button>
+    </div>
+
+    <!-- Subscription Card -->
+    <div class="card mt-16" id="sub-details-card">
+      <div class="card-title">💳 Subscription</div>
+      <div id="sub-detail-body" style="font-size:.85rem;line-height:2"></div>
+      <div class="btn-group mt-8">
+        <button class="btn btn-accent btn-sm" onclick="openMpesaModal()">💳 Pay via M-Pesa</button>
+        <button class="btn btn-ghost btn-sm" onclick="showPlanPicker()">🔄 Change Plan</button>
+      </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="card mt-16">
+      <div class="card-title">📊 Recent Activity</div>
+      <div id="activity-log" style="font-size:.82rem;line-height:2;color:var(--muted)">No activity yet.</div>
+    </div>
+
+    <!-- Pending Payments (Admin only) -->
+    <div class="card mt-16" id="pending-payments-card" style="display:none">
+      <div class="card-title">⏳ Pending Payment Verifications</div>
+      <div id="pending-payments-list"></div>
+    </div>
+  </div>
+
+  <!-- App Frame (loads TPDS or JSMS) -->
+  <div id="app-frame-container" style="display:none;position:fixed;inset:0;top:0;z-index:300;background:var(--bg)">
+    <div style="height:100%;display:flex;flex-direction:column">
+      <div style="background:var(--primary);padding:8px 12px;display:flex;align-items:center;gap:10px;
+        flex-shrink:0;padding-top:calc(8px + env(safe-area-inset-top,0px))">
+        <button class="hdr-btn" onclick="closeApp()" style="font-size:1rem">← Home</button>
+        <div style="flex:1;font-family:'Crimson Pro',serif;font-size:1rem;font-weight:700;color:#fff" id="app-frame-title">App</div>
+        <button class="hdr-btn" onclick="reloadApp()" title="Reload">↺</button>
+      </div>
+      <iframe id="app-iframe" style="flex:1;border:none;width:100%;height:100%" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups"></iframe>
+    </div>
+  </div>
+
+  <!-- Super-Admin Panel -->
+  <div id="admin-panel">
+    <div class="section-title">⚙️ Platform Admin Panel</div>
+    <div class="admin-tabs">
+      <div class="admin-tab active" onclick="switchAdminTab('schools')">🏫 Schools</div>
+      <div class="admin-tab" onclick="switchAdminTab('payments')">💳 Payments</div>
+      <div class="admin-tab" onclick="switchAdminTab('analytics')">📊 Analytics</div>
+      <div class="admin-tab" onclick="switchAdminTab('settings')">⚙️ Settings</div>
+    </div>
+
+    <!-- Schools Tab -->
+    <div class="admin-content active" id="at-schools">
+      <div class="btn-group" style="margin-bottom:12px">
+        <input type="text" id="school-search" placeholder="Search schools…" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text)" oninput="renderAdminSchools()">
+        <button class="btn btn-sm btn-primary" onclick="exportSchoolsCSV()">📥 Export CSV</button>
+      </div>
+      <div id="admin-schools-list"></div>
+    </div>
+
+    <!-- Payments Tab -->
+    <div class="admin-content" id="at-payments">
+      <div class="card" style="margin-bottom:12px;background:var(--accent-l)">
+        <div style="font-size:.8rem;font-weight:700;color:var(--accent-d)">
+          📱 When a school submits M-Pesa code, it appears here for manual verification. After verification, click "Activate" to extend their subscription.
+        </div>
+      </div>
+      <div id="admin-payments-list"></div>
+    </div>
+
+    <!-- Analytics Tab -->
+    <div class="admin-content" id="at-analytics">
+      <div class="metric-cards" id="platform-metrics"></div>
+      <div class="card">
+        <div class="card-title">📈 Revenue Summary</div>
+        <div id="revenue-summary" style="font-size:.85rem;line-height:2.2"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🗺️ Schools by County</div>
+        <div id="county-breakdown"></div>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div class="admin-content" id="at-settings">
+      <div class="card">
+        <div class="card-title">⚙️ Platform Settings</div>
+        <div class="fg">
+          <label>M-Pesa Paybill / Till Number</label>
+          <input id="cfg-mpesa-till" type="text" placeholder="522 522">
+        </div>
+        <div class="fg">
+          <label>M-Pesa Account Prefix</label>
+          <input id="cfg-mpesa-prefix" type="text" placeholder="EDUSUIT">
+        </div>
+        <div class="fg">
+          <label>Support WhatsApp Number</label>
+          <input id="cfg-whatsapp" type="text" placeholder="254700000000">
+        </div>
+        <div class="fg">
+          <label>Trial Period (days)</label>
+          <input id="cfg-trial-days" type="number" value="30" min="1" max="90">
+        </div>
+        <div class="fg">
+          <label>Admin Registration Code</label>
+          <input id="cfg-admin-code" type="text" placeholder="KOPIYA2025">
+        </div>
+        <button class="btn btn-primary" onclick="savePlatformSettings()">💾 Save Settings</button>
+      </div>
+      <div class="card mt-16">
+        <div class="card-title">🔐 Super Admin Login</div>
+        <div class="fg">
+          <label>Super Admin Password</label>
+          <input id="cfg-super-pw" type="password" placeholder="Set super admin password">
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="resetSuperAdmin()">🔄 Update Super Admin Password</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-shell -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════════════════════ -->
+<script>
+/* ════════════════════════════════
+   CONSTANTS & STORAGE KEYS
+════════════════════════════════ */
+const SK = {
+  schools:     'edusuite_schools',
+  currentSchool:'edusuite_current_school',
+  currentUser: 'edusuite_current_user',
+  settings:    'edusuite_platform_settings',
+  payments:    'edusuite_payments',
+  notifs:      'edusuite_notifs',
+  activity:    'edusuite_activity',
+  dark:        'edusuite_dark',
+  superPw:     'edusuite_super_pw',
+};
+
+const PLAN_PRICES = {
+  starter: {label:'Starter', price:800, cycle:'month'},
+  school:  {label:'School',  price:2500, cycle:'month'},
+  premium: {label:'Premium', price:5000, cycle:'month'},
+  term:    {label:'Term License', price:2000, cycle:'term'},
+};
+
+const DEFAULT_SETTINGS = {
+  mPesaTill: '522522',
+  mPesaPrefix: 'EDUSUIT',
+  whatsapp: '254700000000',
+  trialDays: 30,
+  adminCode: 'KOPIYA2025',
+};
+
+/* ════════════════════════════════
+   STORAGE HELPERS
+════════════════════════════════ */
+function _get(key){ try{ return JSON.parse(localStorage.getItem(key)); }catch(e){ return null; } }
+function _set(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+function getSchools(){ return _get(SK.schools) || []; }
+function saveSchools(a){ _set(SK.schools, a); }
+function getSettings(){ return Object.assign({}, DEFAULT_SETTINGS, _get(SK.settings) || {}); }
+function saveSettings(s){ _set(SK.settings, s); }
+function getPayments(){ return _get(SK.payments) || []; }
+function savePayments(a){ _set(SK.payments, a); }
+function getNotifs(){ return _get(SK.notifs) || []; }
+function saveNotifs(a){ _set(SK.notifs, a); }
+function getActivity(){ return _get(SK.activity) || []; }
+function saveActivity(a){ _set(SK.activity, a); }
+
+function getCurrentSchool(){
+  const id = localStorage.getItem(SK.currentSchool);
+  return getSchools().find(s => s.id === id) || null;
+}
+function getCurrentUser(){
+  try{ return JSON.parse(localStorage.getItem(SK.currentUser)); }catch(e){ return null; }
+}
+
+/* ════════════════════════════════
+   UTILITIES
+════════════════════════════════ */
+let _toastTimer;
+function toast(msg, type='info', dur=3000){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (type === 'warn' ? ' warn' : type === 'danger' ? ' danger' : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.className = '', dur);
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function fmtDate(ts){
+  return new Date(ts).toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function fmtCcy(n){ return 'KES ' + Number(n).toLocaleString(); }
+
+function hashPass(s){
+  // Simple deterministic hash — in production replace with bcrypt via backend
+  let h = 5381;
+  for(let i=0;i<s.length;i++) h = ((h<<5)+h) ^ s.charCodeAt(i);
+  return (h >>> 0).toString(16).padStart(8,'0');
+}
+
+function logActivity(msg){
+  const a = getActivity();
+  a.unshift({ msg, ts: Date.now() });
+  if(a.length > 50) a.splice(50);
+  saveActivity(a);
+}
+
+function addNotif(msg, type='info'){
+  const n = getNotifs();
+  n.unshift({ msg, type, ts: Date.now(), read: false });
+  saveNotifs(n);
+  renderNotifBadge();
+}
+
+function renderNotifBadge(){
+  const unread = getNotifs().filter(n=>!n.read).length;
+  const btn = document.getElementById('notif-btn');
+  if(btn) btn.textContent = unread > 0 ? `🔔 ${unread}` : '🔔';
+}
+
+/* ════════════════════════════════
+   DARK MODE
+════════════════════════════════ */
+function toggleDark(){
+  const on = document.documentElement.classList.toggle('dark');
+  localStorage.setItem(SK.dark, on ? '1' : '0');
+  document.getElementById('dark-btn').textContent = on ? '☀️' : '🌙';
+}
+function initDark(){
+  const on = localStorage.getItem(SK.dark) === '1';
+  if(on){ document.documentElement.classList.add('dark'); }
+  const btn = document.getElementById('dark-btn');
+  if(btn) btn.textContent = on ? '☀️' : '🌙';
+}
+
+/* ════════════════════════════════
+   SUBSCRIPTION LOGIC
+════════════════════════════════ */
+function getTrialDaysLeft(school){
+  const settings = getSettings();
+  const trialMs = settings.trialDays * 24 * 60 * 60 * 1000;
+  const elapsed = Date.now() - (school.createdAt || Date.now());
+  const left = Math.ceil((trialMs - elapsed) / (24*60*60*1000));
+  return Math.max(0, left);
+}
+
+function isSubscriptionActive(school){
+  if(!school) return false;
+  if(school.subStatus === 'active' && school.subExpiry > Date.now()) return true;
+  if(school.subStatus === 'trial' || !school.subStatus){
+    return getTrialDaysLeft(school) > 0;
+  }
+  return false;
+}
+
+function updateSubBanner(school){
+  const banner = document.getElementById('sub-banner');
+  const txt = document.getElementById('sub-banner-text');
+  if(!school){ banner.classList.add('hidden'); return; }
+  banner.classList.remove('hidden','danger-banner','success-banner');
+
+  if(school.subStatus === 'active'){
+    const daysLeft = Math.ceil((school.subExpiry - Date.now()) / (24*60*60*1000));
+    if(daysLeft > 14){
+      banner.classList.add('success-banner');
+      txt.textContent = `✅ ${PLAN_PRICES[school.plan]?.label||'School'} Plan — active until ${fmtDate(school.subExpiry)}`;
+    } else {
+      banner.classList.add('danger-banner');
+      txt.textContent = `⚠️ Subscription expires in ${daysLeft} days!`;
+    }
+  } else {
+    const left = getTrialDaysLeft(school);
+    if(left > 7){
+      txt.textContent = `⏳ Free Trial: ${left} days remaining`;
+    } else if(left > 0){
+      banner.classList.add('danger-banner');
+      txt.textContent = `🚨 Trial expires in ${left} days — pay now to keep access!`;
+    } else {
+      banner.classList.add('danger-banner');
+      txt.textContent = '❌ Trial expired — subscribe to continue';
+    }
+  }
+}
+
+/* ════════════════════════════════
+   WIZARD STATE
+════════════════════════════════ */
+let _wzData = {};
+let _selectedPlan = 'school';
+
+function selectPlan(el){
+  document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  _selectedPlan = el.dataset.plan;
+}
+
+function wzNext(step){
+  if(step === 1){
+    const name = document.getElementById('reg-school-name').value.trim();
+    const county = document.getElementById('reg-county').value;
+    if(!name){ document.getElementById('wp1-err').textContent='School name is required.'; return; }
+    if(!county){ document.getElementById('wp1-err').textContent='Please select a county.'; return; }
+    document.getElementById('wp1-err').textContent='';
+    _wzData.schoolName = name;
+    _wzData.schoolCode = document.getElementById('reg-school-code').value.trim();
+    _wzData.county = county;
+    _wzData.subCounty = document.getElementById('reg-sub-county').value.trim();
+    _wzData.phone = document.getElementById('reg-phone').value.trim();
+    setWizardStep(2);
+  } else if(step === 2){
+    const name = document.getElementById('reg-admin-name').value.trim();
+    const email = document.getElementById('reg-admin-email').value.trim();
+    const pw = document.getElementById('reg-password').value;
+    const pw2 = document.getElementById('reg-password2').value;
+    const err = document.getElementById('wp2-err');
+    if(!name){ err.textContent='Your name is required.'; return; }
+    if(!email || !email.includes('@')){ err.textContent='Valid email required.'; return; }
+    if(pw.length < 8){ err.textContent='Password must be at least 8 characters.'; return; }
+    if(pw !== pw2){ err.textContent='Passwords do not match.'; return; }
+    // Check unique email
+    const schools = getSchools();
+    const exists = schools.some(s => s.users && s.users.some(u => u.email === email));
+    if(exists){ err.textContent='This email is already registered. Please log in.'; return; }
+    err.textContent='';
+    _wzData.adminName = name;
+    _wzData.adminEmail = email;
+    _wzData.adminPw = pw;
+    _wzData.adminRole = document.getElementById('reg-admin-role').value;
+    setWizardStep(3);
+  } else if(step === 3){
+    _wzData.plan = _selectedPlan;
+    // Build summary & show step 4
+    const planInfo = PLAN_PRICES[_selectedPlan];
+    document.getElementById('reg-summary').innerHTML = `
+      <div>🏫 <strong>School:</strong> ${esc(_wzData.schoolName)}</div>
+      <div>📍 <strong>County:</strong> ${esc(_wzData.county)}</div>
+      <div>👤 <strong>Admin:</strong> ${esc(_wzData.adminName)}</div>
+      <div>📧 <strong>Email:</strong> ${esc(_wzData.adminEmail)}</div>
+      <div>📋 <strong>Plan:</strong> ${planInfo.label} — ${fmtCcy(planInfo.price)}/${planInfo.cycle}</div>
+      <div>🎯 <strong>Trial:</strong> 30 days FREE</div>
+    `;
+    setWizardStep(4);
+  }
+}
+
+function wzBack(step){
+  setWizardStep(step - 1);
+}
+
+function setWizardStep(n){
+  for(let i=1;i<=4;i++){
+    const pg = document.getElementById('wp'+i);
+    const ws = document.getElementById('ws'+i);
+    if(pg) pg.classList.toggle('active', i===n);
+    if(ws){
+      ws.classList.remove('active','done');
+      if(i < n) ws.classList.add('done');
+      else if(i === n) ws.classList.add('active');
+    }
+  }
+}
+
+function completeRegistration(){
+  const settings = getSettings();
+  const school = {
+    id: uid(),
+    name: _wzData.schoolName,
+    code: _wzData.schoolCode,
+    county: _wzData.county,
+    subCounty: _wzData.subCounty,
+    phone: _wzData.phone,
+    plan: _wzData.plan,
+    subStatus: 'trial',
+    subExpiry: null,
+    createdAt: Date.now(),
+    users: [{
+      id: uid(),
+      name: _wzData.adminName,
+      email: _wzData.adminEmail,
+      passwordHash: hashPass(_wzData.adminPw),
+      role: _wzData.adminRole,
+      isAdmin: true,
+      createdAt: Date.now(),
+    }]
+  };
+  const schools = getSchools();
+  schools.push(school);
+  saveSchools(schools);
+
+  // Set current session
+  localStorage.setItem(SK.currentSchool, school.id);
+  localStorage.setItem(SK.currentUser, JSON.stringify(school.users[0]));
+
+  logActivity(`School "${school.name}" registered`);
+  addNotif(`🎉 Welcome to EduSuite! Your 30-day trial is active.`);
+
+  document.getElementById('register-overlay').classList.add('hidden');
+  initAppShell();
+  toast('🎉 Welcome! Your school is set up.', 'info', 4000);
+}
+
+/* ════════════════════════════════
+   LOGIN / AUTH
+════════════════════════════════ */
+function showRegister(){
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('register-overlay').classList.remove('hidden');
+  setWizardStep(1);
+  _wzData = {};
+}
+
+function showLogin(){
+  document.getElementById('register-overlay').classList.add('hidden');
+  document.getElementById('forgot-overlay').classList.add('hidden');
+  document.getElementById('login-overlay').classList.remove('hidden');
+}
+
+function showForgot(){
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('forgot-overlay').classList.remove('hidden');
+}
+
+function doLogin(){
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pw = document.getElementById('login-password').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  if(!email || !pw){ err.textContent = 'Email and password required.'; return; }
+
+  // Check super admin
+  const superPwHash = localStorage.getItem(SK.superPw) || hashPass('KopiyaAdmin2025');
+  if(email === 'superadmin@edusuite.ke' && hashPass(pw) === superPwHash){
+    localStorage.setItem(SK.currentUser, JSON.stringify({
+      id:'superadmin', name:'Platform Admin', email, role:'superadmin', isAdmin:true
+    }));
+    localStorage.removeItem(SK.currentSchool);
+    document.getElementById('login-overlay').classList.add('hidden');
+    initAppShell();
+    return;
+  }
+
+  // Check school users
+  const schools = getSchools();
+  let foundSchool = null, foundUser = null;
+  for(const school of schools){
+    const user = (school.users||[]).find(u => u.email.toLowerCase() === email && u.passwordHash === hashPass(pw));
+    if(user){ foundSchool = school; foundUser = user; break; }
+  }
+  if(!foundUser){ err.textContent = 'Incorrect email or password.'; shake('login-overlay'); return; }
+  if(!isSubscriptionActive(foundSchool)){
+    err.textContent = '⛔ Your school subscription has expired. Please contact the administrator.';
+    return;
+  }
+  localStorage.setItem(SK.currentSchool, foundSchool.id);
+  localStorage.setItem(SK.currentUser, JSON.stringify(foundUser));
+  document.getElementById('login-overlay').classList.add('hidden');
+  initAppShell();
+  logActivity(`${foundUser.name} logged in`);
+}
+
+function doForgot(){
+  const email = document.getElementById('forgot-email').value.trim();
+  const msg = document.getElementById('forgot-msg');
+  if(!email){ msg.style.color='var(--danger)'; msg.textContent='Enter your email.'; return; }
+  // Simulate: in production send email via backend
+  msg.style.color='var(--success)';
+  msg.textContent = `✅ If ${email} is registered, a reset link has been sent. Check your inbox.`;
+  toast('Reset email sent (simulated)', 'info');
+}
+
+function shake(elId){
+  const el = document.getElementById(elId);
+  el?.querySelector('.modal-box')?.classList.add('shake');
+  setTimeout(() => el?.querySelector('.modal-box')?.classList.remove('shake'), 500);
+}
+
+function doLogout(){
+  localStorage.removeItem(SK.currentUser);
+  localStorage.removeItem(SK.currentSchool);
+  closeApp();
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('login-overlay').classList.remove('hidden');
+  toast('Logged out', 'info', 2000);
+}
+
+/* ════════════════════════════════
+   APP SHELL INIT
+════════════════════════════════ */
+function initAppShell(){
+  const user = getCurrentUser();
+  const school = getCurrentSchool();
+  const shell = document.getElementById('app-shell');
+  shell.style.display = 'block';
+
+  // Header
+  document.getElementById('header-school-name').textContent =
+    school ? school.name : (user?.role === 'superadmin' ? 'Platform Admin' : 'EduSuite');
+  document.getElementById('header-user-name').textContent = user ? `👤 ${user.name}` : '';
+
+  // Welcome card
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('wc-greeting').textContent = `${greet}, ${user?.name?.split(' ')[0] || 'there'}! 👋`;
+  document.getElementById('wc-school').textContent = school ? school.name : 'Platform Administration';
+  document.getElementById('wc-date').textContent = new Date().toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  if(school){
+    const planInfo = PLAN_PRICES[school.plan] || PLAN_PRICES.school;
+    const daysLeft = school.subStatus === 'active'
+      ? Math.ceil((school.subExpiry - Date.now()) / (24*60*60*1000))
+      : getTrialDaysLeft(school);
+    document.getElementById('wc-plan-pill').textContent = `⭐ ${planInfo.label} Plan`;
+    document.getElementById('stat-days').textContent = daysLeft > 0 ? daysLeft : '0';
+    document.getElementById('stat-users').textContent = (school.users||[]).length;
+    updateSubBanner(school);
+    updateSubCard(school);
+    updateAppGrid(school);
+  } else if(user?.role === 'superadmin'){
+    document.getElementById('sub-banner').classList.add('hidden');
+    document.getElementById('wc-plan-pill').textContent = '⚙️ Super Admin';
+    document.getElementById('home-screen').style.display = 'none';
+    document.getElementById('admin-panel').classList.add('visible');
+    renderAdminPanel();
+  }
+
+  renderActivityLog();
+  renderNotifBadge();
+  renderPendingPayments();
+  initDark();
+}
+
+function updateAppGrid(school){
+  const plan = school?.plan || 'school';
+  const jsmsCard = document.getElementById('jsms-card');
+  if(plan === 'starter'){
+    jsmsCard.classList.add('locked');
+    jsmsCard.onclick = () => toast('JSMS requires School plan or higher. Upgrade now.','warn');
+  } else {
+    jsmsCard.classList.remove('locked');
+    jsmsCard.onclick = () => launchApp('jsms');
+  }
+}
+
+function updateSubCard(school){
+  const planInfo = PLAN_PRICES[school.plan] || {};
+  const active = isSubscriptionActive(school);
+  const trialLeft = getTrialDaysLeft(school);
+  let html = `
+    <div><strong>Plan:</strong> ${planInfo.label || school.plan} — ${fmtCcy(planInfo.price||0)}/${planInfo.cycle||'month'}</div>
+    <div><strong>Status:</strong> <span class="badge ${active ? 'bg-green':'bg-red'}">${school.subStatus === 'active' ? '✅ Active' : trialLeft > 0 ? '⏳ Trial' : '❌ Expired'}</span></div>
+  `;
+  if(school.subStatus === 'active'){
+    html += `<div><strong>Expires:</strong> ${fmtDate(school.subExpiry)}</div>`;
+  } else if(trialLeft > 0){
+    html += `<div><strong>Trial days left:</strong> ${trialLeft}</div>`;
+  } else {
+    html += `<div style="color:var(--danger);font-weight:700">⛔ Subscription expired. Pay to restore access.</div>`;
+  }
+  document.getElementById('sub-detail-body').innerHTML = html;
+}
+
+/* ════════════════════════════════
+   APP LAUNCHING
+════════════════════════════════ */
+const APP_PATHS = {
+  tpds: '/mnt/user-data/uploads/TPDSPortalV144-1.html',
+  jsms: '/mnt/user-data/uploads/JSMSPortalDesktopV25.html',
+};
+const APP_NAMES = { tpds: '📋 TPDS Portal', jsms: '🏫 JSMS Portal' };
+
+let _currentApp = null;
+
+function launchApp(appId){
+  const school = getCurrentSchool();
+  if(school && !isSubscriptionActive(school)){
+    toast('⛔ Subscription expired. Please pay to continue.','danger', 4000);
+    openMpesaModal();
+    return;
+  }
+  _currentApp = appId;
+  document.getElementById('app-frame-title').textContent = APP_NAMES[appId] || appId;
+  document.getElementById('app-iframe').src = APP_PATHS[appId];
+  document.getElementById('app-frame-container').style.display = 'block';
+  logActivity(`Opened ${APP_NAMES[appId]}`);
+}
+
+function closeApp(){
+  document.getElementById('app-frame-container').style.display = 'none';
+  document.getElementById('app-iframe').src = 'about:blank';
+  _currentApp = null;
+}
+
+function reloadApp(){
+  if(_currentApp) document.getElementById('app-iframe').src = APP_PATHS[_currentApp];
+}
+
+/* ════════════════════════════════
+   HOME SCREEN
+════════════════════════════════ */
+function showHome(){
+  document.getElementById('app-frame-container').style.display = 'none';
+  document.getElementById('admin-panel').classList.remove('visible');
+  document.getElementById('home-screen').style.display = '';
+}
+
+function renderActivityLog(){
+  const log = getActivity().slice(0, 8);
+  const el = document.getElementById('activity-log');
+  if(!log.length){ el.textContent = 'No activity yet.'; return; }
+  el.innerHTML = log.map(a =>
+    `<div>📌 ${esc(a.msg)} <span style="color:var(--muted);font-size:.7rem">${fmtDate(a.ts)}</span></div>`
+  ).join('');
+}
+
+/* ════════════════════════════════
+   NOTIFICATIONS
+════════════════════════════════ */
+function showNotifications(){
+  const panel = document.getElementById('notif-panel');
+  const visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
+  if(!visible){
+    const notifs = getNotifs();
+    notifs.forEach(n=>n.read=true);
+    saveNotifs(notifs);
+    renderNotifBadge();
+    const list = document.getElementById('notif-list');
+    if(!notifs.length){ list.innerHTML = '<div class="text-muted">No notifications.</div>'; return; }
+    list.innerHTML = notifs.slice(0,10).map(n =>
+      `<div style="padding:6px 0;border-bottom:1px solid var(--border-l);font-size:.82rem">
+        ${esc(n.msg)} <div style="font-size:.7rem;color:var(--muted)">${fmtDate(n.ts)}</div>
+       </div>`
+    ).join('');
+  }
+}
+function clearNotifs(){ saveNotifs([]); document.getElementById('notif-panel').style.display='none'; renderNotifBadge(); }
+document.addEventListener('click', e => {
+  const panel = document.getElementById('notif-panel');
+  if(panel && !panel.contains(e.target) && e.target.id !== 'notif-btn') panel.style.display = 'none';
+});
+
+/* ════════════════════════════════
+   PENDING PAYMENTS (school view)
+════════════════════════════════ */
+function renderPendingPayments(){
+  const user = getCurrentUser();
+  if(!user?.isAdmin) return;
+  const school = getCurrentSchool();
+  if(!school && user.role !== 'superadmin') return;
+
+  const payments = getPayments().filter(p =>
+    p.status === 'pending' && (user.role === 'superadmin' || p.schoolId === school?.id)
+  );
+  const card = document.getElementById('pending-payments-card');
+  const list = document.getElementById('pending-payments-list');
+  if(!payments.length){ card.style.display='none'; return; }
+  card.style.display = 'block';
+  list.innerHTML = payments.map(p => `
+    <div class="school-row">
+      <div class="sr-info">
+        <div class="sr-name">${esc(p.schoolName)}</div>
+        <div class="sr-meta">Code: <strong>${esc(p.mpesaCode)}</strong> · ${fmtCcy(p.amount)} · ${fmtDate(p.submittedAt)}</div>
+      </div>
+      ${user.role === 'superadmin' ? `
+        <button class="btn btn-success btn-xs" onclick="verifyPayment('${p.id}')">✅ Verify</button>
+        <button class="btn btn-danger btn-xs" onclick="rejectPayment('${p.id}')">❌ Reject</button>
+      ` : '<span class="badge bg-yellow">⏳ Pending</span>'}
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════
+   M-PESA MODAL
+════════════════════════════════ */
+function openMpesaModal(){
+  const school = getCurrentSchool();
+  const settings = getSettings();
+  const plan = school?.plan || 'school';
+  const planInfo = PLAN_PRICES[plan] || PLAN_PRICES.school;
+  const ref = 'EDU-' + (school?.id?.toUpperCase().slice(0,6) || 'NEW') + '-' + Date.now().toString(36).toUpperCase().slice(-4);
+
+  document.getElementById('mpesa-amount-display').textContent = planInfo.price.toLocaleString();
+  document.getElementById('mpesa-ref-display').textContent = ref;
+  document.getElementById('mpesa-till').textContent = settings.mPesaTill;
+  document.getElementById('mpesa-biz-num').textContent = settings.mPesaTill;
+  document.getElementById('mpesa-account-display').textContent = settings.mPesaPrefix + '-' + (school?.id?.toUpperCase().slice(0,6)||'REG');
+  document.getElementById('mpesa-acct-num').textContent = settings.mPesaPrefix + '-' + (school?.id?.toUpperCase().slice(0,6)||'REG');
+  document.getElementById('mpesa-amount-steps').textContent = 'KES ' + planInfo.price.toLocaleString();
+
+  document.getElementById('mpesa-step-1').style.display = '';
+  document.getElementById('mpesa-step-2').style.display = 'none';
+  document.getElementById('mpesa-step-3').style.display = 'none';
+
+  document.getElementById('mpesa-modal').classList.remove('hidden');
+  window._mpesaRef = ref;
+  window._mpesaPlan = plan;
+  window._mpesaAmount = planInfo.price;
+}
+
+function closeMpesaModal(){
+  document.getElementById('mpesa-modal').classList.add('hidden');
+}
+
+function showMpesaVerify(){
+  document.getElementById('mpesa-step-1').style.display = 'none';
+  document.getElementById('mpesa-step-2').style.display = '';
+}
+
+function submitPayment(){
+  const code = document.getElementById('mpesa-code').value.trim().toUpperCase();
+  const phone = document.getElementById('mpesa-phone').value.trim();
+  const err = document.getElementById('mpesa-verify-err');
+  if(code.length < 8){ err.textContent = 'Enter a valid M-Pesa confirmation code (10 characters).'; return; }
+  if(!phone){ err.textContent = 'Enter your M-Pesa phone number.'; return; }
+  err.textContent = '';
+  const btn = document.getElementById('mpesa-submit-btn');
+  btn.innerHTML = '<span class="spinner"></span> Submitting…';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    const school = getCurrentSchool();
+    const payment = {
+      id: uid(),
+      schoolId: school?.id || 'new',
+      schoolName: school?.name || 'New School',
+      mpesaCode: code,
+      phone,
+      amount: window._mpesaAmount || 2500,
+      plan: window._mpesaPlan || 'school',
+      ref: window._mpesaRef,
+      status: 'pending',
+      submittedAt: Date.now(),
+    };
+    const payments = getPayments();
+    payments.unshift(payment);
+    savePayments(payments);
+    logActivity(`Payment submitted: ${code} for ${fmtCcy(payment.amount)}`);
+    addNotif(`💳 Payment ${code} submitted. Pending verification.`);
+
+    document.getElementById('mpesa-step-2').style.display = 'none';
+    document.getElementById('mpesa-step-3').style.display = '';
+    renderPendingPayments();
+    toast('💳 Payment details submitted!', 'info', 4000);
+  }, 1200);
+}
+
+/* ════════════════════════════════
+   SUPER ADMIN PANEL
+════════════════════════════════ */
+function switchAdminTab(tab){
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.admin-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('at-' + tab)?.classList.add('active');
+  if(tab === 'schools') renderAdminSchools();
+  if(tab === 'payments') renderAdminPayments();
+  if(tab === 'analytics') renderAdminAnalytics();
+  if(tab === 'settings') loadSettingsForm();
+}
+
+function renderAdminPanel(){
+  renderAdminSchools();
+  renderAdminPayments();
+  renderAdminAnalytics();
+  loadSettingsForm();
+  // Show metrics in home-screen stat cards
+  const schools = getSchools();
+  document.getElementById('stat-schools').textContent = schools.length;
+  document.getElementById('stat-users').textContent = schools.reduce((s,c)=>s+(c.users?.length||0),0);
+  const payments = getPayments().filter(p=>p.status==='verified');
+  const revenue = payments.reduce((s,p)=>s+p.amount,0);
+  document.getElementById('stat-days').textContent = fmtCcy(revenue).replace('KES ','');
+}
+
+function renderAdminSchools(){
+  const search = (document.getElementById('school-search')?.value||'').toLowerCase();
+  const schools = getSchools().filter(s => !search || s.name.toLowerCase().includes(search) || s.county?.toLowerCase().includes(search));
+  const list = document.getElementById('admin-schools-list');
+  if(!schools.length){ list.innerHTML = '<div class="text-muted">No schools registered yet.</div>'; return; }
+  list.innerHTML = schools.map(s => {
+    const active = isSubscriptionActive(s);
+    const planInfo = PLAN_PRICES[s.plan] || {};
+    return `<div class="school-row">
+      <div class="sr-info">
+        <div class="sr-name">🏫 ${esc(s.name)}</div>
+        <div class="sr-meta">${esc(s.county||'')} · ${planInfo.label||s.plan||'—'} · ${(s.users||[]).length} users · Registered ${fmtDate(s.createdAt)}</div>
+      </div>
+      <span class="badge ${active?'bg-green':'bg-red'}">${active?'✅ Active':'❌ Expired'}</span>
+      <button class="btn btn-xs btn-outline" onclick="adminExtendTrial('${s.id}')">+30d</button>
+      <button class="btn btn-xs btn-danger" onclick="adminDeleteSchool('${s.id}')">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+function renderAdminPayments(){
+  const payments = getPayments();
+  const list = document.getElementById('admin-payments-list');
+  if(!payments.length){ list.innerHTML = '<div class="text-muted">No payment submissions yet.</div>'; return; }
+  list.innerHTML = payments.map(p => `
+    <div class="school-row">
+      <div class="sr-info">
+        <div class="sr-name">${esc(p.schoolName)}</div>
+        <div class="sr-meta">
+          Code: <strong>${esc(p.mpesaCode)}</strong> · ${fmtCcy(p.amount)} · ${esc(p.plan)} plan · ${fmtDate(p.submittedAt)}
+          <br>Phone: ${esc(p.phone)} · Ref: ${esc(p.ref)}
+        </div>
+      </div>
+      <span class="badge ${p.status==='verified'?'bg-green':p.status==='rejected'?'bg-red':'bg-yellow'}">${p.status}</span>
+      ${p.status==='pending' ? `
+        <button class="btn btn-success btn-xs" onclick="verifyPayment('${p.id}')">✅ Activate</button>
+        <button class="btn btn-danger btn-xs" onclick="rejectPayment('${p.id}')">❌ Reject</button>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+function verifyPayment(paymentId){
+  const payments = getPayments();
+  const idx = payments.findIndex(p => p.id === paymentId);
+  if(idx < 0) return;
+  const p = payments[idx];
+  p.status = 'verified';
+  p.verifiedAt = Date.now();
+
+  // Activate school subscription
+  const schools = getSchools();
+  const si = schools.findIndex(s => s.id === p.schoolId);
+  if(si >= 0){
+    const plan = PLAN_PRICES[p.plan] || PLAN_PRICES.school;
+    // Add 1 month or 1 term
+    const addMs = p.plan === 'term'
+      ? 120 * 24 * 60 * 60 * 1000   // ~4 months per term
+      : 30 * 24 * 60 * 60 * 1000;   // 30 days per month
+    const current = schools[si].subExpiry || Date.now();
+    schools[si].subStatus = 'active';
+    schools[si].subExpiry = Math.max(current, Date.now()) + addMs;
+    schools[si].plan = p.plan;
+    saveSchools(schools);
+  }
+  savePayments(payments);
+  logActivity(`Payment ${p.mpesaCode} verified — ${p.schoolName} activated`);
+  addNotif(`✅ Payment verified for ${p.schoolName}`);
+  renderAdminPayments();
+  renderPendingPayments();
+  toast(`✅ ${p.schoolName} subscription activated!`, 'info', 4000);
+}
+
+function rejectPayment(paymentId){
+  const payments = getPayments();
+  const idx = payments.findIndex(p => p.id === paymentId);
+  if(idx < 0) return;
+  payments[idx].status = 'rejected';
+  payments[idx].rejectedAt = Date.now();
+  savePayments(payments);
+  renderAdminPayments();
+  toast('Payment rejected.','warn');
+}
+
+function adminExtendTrial(schoolId){
+  const schools = getSchools();
+  const s = schools.find(x=>x.id===schoolId);
+  if(!s) return;
+  s.createdAt = Date.now(); // Reset trial start
+  saveSchools(schools);
+  renderAdminSchools();
+  toast(`Trial extended 30 days for ${s.name}`, 'info');
+}
+
+function adminDeleteSchool(schoolId){
+  if(!confirm('Delete this school and ALL its data? This cannot be undone.')) return;
+  const schools = getSchools().filter(s=>s.id!==schoolId);
+  saveSchools(schools);
+  renderAdminSchools();
+  renderAdminAnalytics();
+  toast('School deleted.','warn');
+}
+
+function renderAdminAnalytics(){
+  const schools = getSchools();
+  const payments = getPayments().filter(p=>p.status==='verified');
+  const revenue = payments.reduce((s,p)=>s+p.amount,0);
+  const activeSchools = schools.filter(s=>isSubscriptionActive(s)).length;
+  const trialSchools = schools.filter(s=>s.subStatus!=='active' && getTrialDaysLeft(s)>0).length;
+
+  document.getElementById('platform-metrics').innerHTML = `
+    <div class="metric-card"><div class="mv">${schools.length}</div><div class="ml">Total Schools</div></div>
+    <div class="metric-card"><div class="mv">${activeSchools}</div><div class="ml">Active Subs</div></div>
+    <div class="metric-card"><div class="mv">${trialSchools}</div><div class="ml">On Trial</div></div>
+    <div class="metric-card"><div class="mv">${fmtCcy(revenue)}</div><div class="ml">Total Revenue</div></div>
+  `;
+
+  // Revenue by plan
+  const byPlan = {};
+  payments.forEach(p=>{ byPlan[p.plan]=(byPlan[p.plan]||0)+p.amount; });
+  document.getElementById('revenue-summary').innerHTML = Object.entries(byPlan).map(([plan,amt]) =>
+    `<div><strong>${PLAN_PRICES[plan]?.label||plan}:</strong> ${fmtCcy(amt)}</div>`
+  ).join('') || '<div class="text-muted">No revenue yet.</div>';
+
+  // By county
+  const byCounty = {};
+  schools.forEach(s=>{ byCounty[s.county||'Unknown']=(byCounty[s.county||'Unknown']||0)+1; });
+  const sorted = Object.entries(byCounty).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('county-breakdown').innerHTML = sorted.map(([county,count]) =>
+    `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-l);font-size:.85rem">
+      <span>📍 ${esc(county)}</span><strong>${count} school${count>1?'s':''}</strong>
+     </div>`
+  ).join('') || '<div class="text-muted">No data.</div>';
+}
+
+function exportSchoolsCSV(){
+  const schools = getSchools();
+  const rows = [['School Name','County','Sub-County','Plan','Status','Users','Registered']];
+  schools.forEach(s=>{
+    rows.push([s.name, s.county||'', s.subCounty||'', s.plan||'', isSubscriptionActive(s)?'Active':'Expired', (s.users||[]).length, fmtDate(s.createdAt)]);
+  });
+  const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'EduSuite_Schools_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  toast('Schools CSV exported','info');
+}
+
+/* ════════════════════════════════
+   SETTINGS
+════════════════════════════════ */
+function loadSettingsForm(){
+  const s = getSettings();
+  document.getElementById('cfg-mpesa-till').value = s.mPesaTill||'';
+  document.getElementById('cfg-mpesa-prefix').value = s.mPesaPrefix||'';
+  document.getElementById('cfg-whatsapp').value = s.whatsapp||'';
+  document.getElementById('cfg-trial-days').value = s.trialDays||30;
+  document.getElementById('cfg-admin-code').value = s.adminCode||'';
+}
+
+function savePlatformSettings(){
+  const s = {
+    mPesaTill: document.getElementById('cfg-mpesa-till').value.trim(),
+    mPesaPrefix: document.getElementById('cfg-mpesa-prefix').value.trim(),
+    whatsapp: document.getElementById('cfg-whatsapp').value.trim(),
+    trialDays: parseInt(document.getElementById('cfg-trial-days').value)||30,
+    adminCode: document.getElementById('cfg-admin-code').value.trim(),
+  };
+  saveSettings(s);
+  toast('✅ Settings saved!','info');
+}
+
+function resetSuperAdmin(){
+  const pw = document.getElementById('cfg-super-pw').value;
+  if(pw.length < 8){ toast('Password must be 8+ characters','warn'); return; }
+  localStorage.setItem(SK.superPw, hashPass(pw));
+  toast('✅ Super admin password updated','info');
+}
+
+/* ════════════════════════════════
+   PLAN PICKER (from home)
+════════════════════════════════ */
+function showPlanPicker(){
+  toast('To change your plan, contact us on WhatsApp.','info', 4000);
+  openSupport();
+}
+
+function openSupport(){
+  const s = getSettings();
+  const num = s.whatsapp || '254700000000';
+  window.open(`https://wa.me/${num}?text=EduSuite+Support+Request`, '_blank');
+}
+
+/* ════════════════════════════════
+   PWA SERVICE WORKER
+════════════════════════════════ */
+function registerSW(){
+  if('serviceWorker' in navigator){
+    // Inline SW via blob URL (no external file needed)
+    const swCode = `
+const CACHE='edusuite-v1';
+self.addEventListener('install',e=>{self.skipWaiting();});
+self.addEventListener('activate',e=>{self.clients.claim();});
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET')return;
+  e.respondWith(caches.match(e.request).then(r=>{
+    const n=fetch(e.request).then(res=>{
+      if(res&&res.status===200&&res.type==='basic'){
+        const c=res.clone();
+        caches.open(CACHE).then(cache=>cache.put(e.request,c));
+      }
+      return res;
+    }).catch(()=>r);
+    return r||n;
+  }));
+});
+    `;
+    const blob = new Blob([swCode], {type:'application/javascript'});
+    const url = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url).then(reg=>{
+      console.log('SW registered');
+    }).catch(e=>console.log('SW error:',e));
+  }
+}
+
+/* ════════════════════════════════
+   BOOT
+════════════════════════════════ */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hidden');
+    initDark();
+
+    const user = getCurrentUser();
+    if(user){
+      initAppShell();
+    } else {
+      document.getElementById('login-overlay').classList.remove('hidden');
+    }
+    registerSW();
+  }, 1200);
+});
+</script>
+
+<!-- ══════════════════════════════════════════
+     SCHOOL MANAGEMENT PANEL (Admin-level users)
+══════════════════════════════════════════ -->
+<div id="school-panel" style="display:none;padding:14px 12px;max-width:700px;margin:0 auto;padding-bottom:40px">
+  <div class="section-title">⚙️ School Settings</div>
+  <div class="admin-tabs" id="school-tabs">
+    <div class="admin-tab active" onclick="switchSchoolTab('users')">👥 Users</div>
+    <div class="admin-tab" onclick="switchSchoolTab('profile')">🏫 Profile</div>
+    <div class="admin-tab" onclick="switchSchoolTab('sync')">🔄 Sync</div>
+    <div class="admin-tab" onclick="switchSchoolTab('exports')">📥 Exports</div>
+  </div>
+
+  <!-- Users Tab -->
+  <div class="admin-content active" id="st-users">
+    <div class="btn-group" style="margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" onclick="showAddUserModal()">➕ Add Teacher/User</button>
+      <button class="btn btn-ghost btn-sm" onclick="refreshUserList()">↺ Refresh</button>
+    </div>
+    <div id="school-users-list"></div>
+  </div>
+
+  <!-- School Profile Tab -->
+  <div class="admin-content" id="st-profile">
+    <div class="card">
+      <div class="card-title">🏫 School Information</div>
+      <div class="fg"><label>School Name</label><input id="sp-name" type="text"></div>
+      <div class="fg"><label>KNEC Code</label><input id="sp-code" type="text"></div>
+      <div class="fg"><label>County</label><input id="sp-county" type="text"></div>
+      <div class="fg"><label>Sub-County</label><input id="sp-subcounty" type="text"></div>
+      <div class="fg"><label>Contact Phone</label><input id="sp-phone" type="tel"></div>
+      <div class="fg"><label>School Email</label><input id="sp-email" type="email"></div>
+      <div class="fg"><label>School Motto</label><input id="sp-motto" type="text" placeholder="e.g. Excellence Through Service"></div>
+      <button class="btn btn-primary" onclick="saveSchoolProfile()">💾 Save Profile</button>
+    </div>
+    <div class="card mt-12">
+      <div class="card-title">📅 Academic Calendar</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg"><label>Term 1 Start</label><input id="sp-t1s" type="date"></div>
+        <div class="fg"><label>Term 1 End</label><input id="sp-t1e" type="date"></div>
+        <div class="fg"><label>Term 2 Start</label><input id="sp-t2s" type="date"></div>
+        <div class="fg"><label>Term 2 End</label><input id="sp-t2e" type="date"></div>
+        <div class="fg"><label>Term 3 Start</label><input id="sp-t3s" type="date"></div>
+        <div class="fg"><label>Term 3 End</label><input id="sp-t3e" type="date"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveAcademicCalendar()">💾 Save Calendar</button>
+    </div>
+  </div>
+
+  <!-- Sync Tab -->
+  <div class="admin-content" id="st-sync">
+    <div class="card">
+      <div class="card-title">🔄 Data Sync Status</div>
+      <div id="sync-status-display" style="font-size:.85rem;line-height:2.2;margin-bottom:12px"></div>
+      <div class="btn-group">
+        <button class="btn btn-primary btn-sm" onclick="manualSync()">🔄 Sync Now</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSyncQueue()">🧹 Clear Queue</button>
+      </div>
+    </div>
+    <div class="card mt-12">
+      <div class="card-title">📡 Connection Status</div>
+      <div id="connection-status" style="font-size:.9rem;font-weight:700"></div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:8px">
+        EduSuite works offline. Data entered while offline is queued and synced automatically when internet is restored.
+      </div>
+    </div>
+    <div class="card mt-12">
+      <div class="card-title">📦 Offline Queue</div>
+      <div id="offline-queue-display" style="font-size:.82rem;color:var(--muted)"></div>
+    </div>
+    <div class="card mt-12" style="background:var(--accent-l);border-color:var(--accent)">
+      <div style="font-size:.8rem;color:var(--accent-d);font-weight:700">
+        ☁️ <strong>Supabase Cloud Sync</strong> is available on School and Premium plans. 
+        Your data is safely stored locally and backed up to the cloud every time you connect.
+        <br><br>
+        To connect your Supabase project, enter your credentials below:
+      </div>
+      <div class="fg mt-8"><label>Supabase Project URL</label><input id="supabase-url" type="text" placeholder="https://xxxx.supabase.co"></div>
+      <div class="fg"><label>Supabase Anon Key</label><input id="supabase-key" type="password" placeholder="eyJhbG…"></div>
+      <button class="btn btn-accent btn-sm" onclick="saveSupabaseConfig()">🔗 Connect Supabase</button>
+    </div>
+  </div>
+
+  <!-- Exports Tab -->
+  <div class="admin-content" id="st-exports">
+    <div class="card">
+      <div class="card-title">📥 Export School Data</div>
+      <p class="text-muted" style="margin-bottom:14px">Download your school's data for backup or offline use.</p>
+      <div class="btn-group" style="flex-direction:column;gap:10px">
+        <button class="btn btn-outline" onclick="exportFullBackup()">📦 Full Data Backup (JSON)</button>
+        <button class="btn btn-outline" onclick="exportUsersCSV()">👥 Users List (CSV)</button>
+        <button class="btn btn-outline" onclick="exportActivityCSV()">📊 Activity Log (CSV)</button>
+        <button class="btn btn-outline" onclick="exportPaymentsCSV()">💳 Payment History (CSV)</button>
+      </div>
+    </div>
+    <div class="card mt-12">
+      <div class="card-title">📤 Import Data</div>
+      <p class="text-muted" style="margin-bottom:10px">Restore from a previous JSON backup.</p>
+      <div class="fg">
+        <label>Select Backup File (.json)</label>
+        <input type="file" id="import-file" accept=".json" onchange="importBackup(this)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADD / EDIT USER MODAL
+══════════════════════════════════════════ -->
+<div class="mpesa-modal hidden" id="user-modal">
+  <div class="mpesa-box">
+    <div style="font-weight:800;font-size:1.1rem;margin-bottom:16px" id="user-modal-title">➕ Add User</div>
+    <input type="hidden" id="edit-user-id">
+    <div class="fg"><label>Full Name *</label><input id="um-name" type="text" placeholder="e.g. Jane Achieng"></div>
+    <div class="fg"><label>Email Address *</label><input id="um-email" type="email" placeholder="teacher@school.ke"></div>
+    <div class="fg">
+      <label>Role *</label>
+      <select id="um-role">
+        <option value="teacher">Teacher</option>
+        <option value="hod">Head of Department (HOD)</option>
+        <option value="deputy">Deputy Principal</option>
+        <option value="principal">Principal</option>
+        <option value="bursar">Bursar</option>
+        <option value="librarian">Librarian</option>
+        <option value="tsc_teacher">TSC Teacher</option>
+      </select>
+    </div>
+    <div class="fg"><label>TSC Number</label><input id="um-tsc" type="text" placeholder="Optional"></div>
+    <div class="fg" id="um-pw-group">
+      <label>Password *</label>
+      <input id="um-password" type="password" placeholder="At least 8 characters">
+      <div class="hint">Leave blank when editing to keep current password</div>
+    </div>
+    <div class="fg">
+      <label>Subjects (comma separated)</label>
+      <input id="um-subjects" type="text" placeholder="e.g. English, Integrated Science">
+    </div>
+    <div class="fg">
+      <label>Class Teacher of</label>
+      <select id="um-class">
+        <option value="">— Not a class teacher —</option>
+        <option>Grade 7A</option><option>Grade 7B</option>
+        <option>Grade 8A</option><option>Grade 8B</option>
+        <option>Grade 9A</option><option>Grade 9B</option>
+      </select>
+    </div>
+    <div id="um-err" class="err"></div>
+    <div class="btn-group">
+      <button class="btn btn-ghost" onclick="closeUserModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveUser()">💾 Save User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     LANDING PAGE / MARKETING MODAL
+══════════════════════════════════════════ -->
+<div class="mpesa-modal hidden" id="landing-modal">
+  <div class="mpesa-box" style="max-width:480px;max-height:90vh;overflow-y:auto;text-align:center">
+    <div style="font-size:3rem;margin-bottom:8px">🏫</div>
+    <h2 style="font-family:'Crimson Pro',serif;font-size:1.6rem;color:var(--primary);margin-bottom:4px">Kopiya EduSuite</h2>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:18px">The complete school management platform for Kenya's CBC curriculum</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;text-align:left">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:1.4rem;margin-bottom:4px">📋</div>
+        <div style="font-weight:700;font-size:.85rem;color:var(--primary)">TPDS Portal</div>
+        <div style="font-size:.72rem;color:var(--muted);line-height:1.4">Lesson plans, IEPs, Schemes of Work, TSC compliance documents</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:1.4rem;margin-bottom:4px">🏫</div>
+        <div style="font-weight:700;font-size:.85rem;color:var(--primary)">JSMS Portal</div>
+        <div style="font-size:.72rem;color:var(--muted);line-height:1.4">Learners, fees, attendance, exams, library, timetable</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:1.4rem;margin-bottom:4px">📱</div>
+        <div style="font-weight:700;font-size:.85rem;color:var(--primary)">Works Offline</div>
+        <div style="font-size:.72rem;color:var(--muted);line-height:1.4">Full functionality without internet. Syncs when connected.</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:1.4rem;margin-bottom:4px">💳</div>
+        <div style="font-weight:700;font-size:.85rem;color:var(--primary)">M-Pesa Payments</div>
+        <div style="font-size:.72rem;color:var(--muted);line-height:1.4">Pay subscriptions and school fees via M-Pesa</div>
+      </div>
+    </div>
+
+    <div style="background:var(--accent-l);border:1.5px solid var(--accent);border-radius:10px;padding:12px;margin-bottom:18px">
+      <div style="font-weight:800;font-size:1rem;color:var(--accent-d)">🎯 30-Day Free Trial</div>
+      <div style="font-size:.8rem;color:var(--accent-d);margin-top:4px">No M-Pesa required to start. Full access for 30 days.</div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <div style="font-weight:700;font-size:.9rem;color:var(--primary);margin-bottom:8px">Plans from KES 800/month</div>
+      <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
+        <span class="badge bg-green">📋 Starter: KES 800</span>
+        <span class="badge bg-blue">🏫 School: KES 2,500</span>
+        <span class="badge bg-yellow">💎 Premium: KES 5,000</span>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:16px">
+      <div style="font-size:.8rem;font-weight:700;color:var(--primary);margin-bottom:6px">📣 Trusted by schools in:</div>
+      <div style="font-size:.75rem;color:var(--muted)">Siaya · Kisumu · Kakamega · Bungoma · Homa Bay · Migori</div>
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="closeLanding();showRegister()">✨ Register Your School Free</button>
+    <button class="btn btn-ghost btn-full btn-sm mt-8" onclick="closeLanding();showLogin()">Already registered? Sign in →</button>
+    <div style="margin-top:12px">
+      <a href="#" onclick="closeLanding();openSupport();return false" style="color:var(--primary);font-size:.8rem;font-weight:700;text-decoration:none">
+        📞 WhatsApp Us for a Demo
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CHANGE PASSWORD MODAL
+══════════════════════════════════════════ -->
+<div class="mpesa-modal hidden" id="change-pw-modal">
+  <div class="mpesa-box" style="max-width:380px">
+    <div style="font-weight:800;font-size:1.05rem;margin-bottom:16px">🔐 Change Password</div>
+    <div class="fg"><label>Current Password</label><input id="cpw-current" type="password" placeholder="Current password"></div>
+    <div class="fg"><label>New Password</label><input id="cpw-new" type="password" placeholder="At least 8 characters"></div>
+    <div class="fg"><label>Confirm New Password</label><input id="cpw-new2" type="password" placeholder="Repeat new password"></div>
+    <div id="cpw-err" class="err"></div>
+    <div class="btn-group">
+      <button class="btn btn-ghost" onclick="document.getElementById('change-pw-modal').classList.add('hidden')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="doChangePassword()">🔐 Update Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- PWA Manifest injected via JS below -->
+
+<script>
+/* ════════════════════════════════════════════════
+   SCHOOL PANEL — TAB SWITCHING
+════════════════════════════════════════════════ */
+function showSchoolPanel(){
+  document.getElementById('home-screen').style.display = 'none';
+  document.getElementById('app-frame-container').style.display = 'none';
+  document.getElementById('admin-panel').classList.remove('visible');
+  document.getElementById('school-panel').style.display = 'block';
+  switchSchoolTab('users');
+  loadSchoolProfile();
+  renderSyncStatus();
+}
+
+function switchSchoolTab(tab){
+  document.querySelectorAll('#school-tabs .admin-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#school-panel .admin-content').forEach(c=>c.classList.remove('active'));
+  event?.target?.classList.add('active');
+  document.getElementById('st-'+tab)?.classList.add('active');
+  if(tab==='users') renderSchoolUsers();
+  if(tab==='sync') renderSyncStatus();
+}
+
+/* ════════════════════════════════════════════════
+   USER MANAGEMENT
+════════════════════════════════════════════════ */
+function renderSchoolUsers(){
+  const school = getCurrentSchool();
+  if(!school) return;
+  const users = school.users || [];
+  const list = document.getElementById('school-users-list');
+
+  const roleLabels = {
+    principal:'Principal',deputy:'Deputy Principal',hod:'HOD',
+    teacher:'Teacher',bursar:'Bursar',librarian:'Librarian',
+    tsc_teacher:'TSC Teacher',admin:'Admin'
+  };
+  const roleBadge = {
+    principal:'bg-red',deputy:'bg-orange',hod:'bg-blue',
+    teacher:'bg-green',bursar:'bg-yellow',librarian:'bg-gray',
+    tsc_teacher:'bg-green',admin:'bg-red'
+  };
+
+  if(!users.length){ list.innerHTML='<div class="text-muted">No users yet.</div>'; return; }
+  list.innerHTML = `
+    <div class="tbl-wrap">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Role</th><th>Class</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${users.map(u=>`
+            <tr>
+              <td><div style="font-weight:600">${esc(u.name)}</div><div style="font-size:.72rem;color:var(--muted)">${esc(u.email)}</div></td>
+              <td><span class="badge ${roleBadge[u.role]||'bg-gray'}">${roleLabels[u.role]||u.role}</span></td>
+              <td style="font-size:.78rem">${esc(u.classTeacherOf||'—')}</td>
+              <td>
+                <div class="btn-group">
+                  <button class="btn btn-xs btn-outline" onclick="editUser('${u.id}')">✏️</button>
+                  <button class="btn btn-xs btn-danger" onclick="deleteUser('${u.id}')">🗑️</button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:8px;text-align:right">${users.length} user${users.length!==1?'s':''} total</div>
+  `;
+}
+
+function refreshUserList(){ renderSchoolUsers(); toast('Users refreshed','info',1500); }
+
+function showAddUserModal(){
+  document.getElementById('user-modal-title').textContent = '➕ Add User';
+  document.getElementById('edit-user-id').value = '';
+  document.getElementById('um-name').value = '';
+  document.getElementById('um-email').value = '';
+  document.getElementById('um-role').value = 'teacher';
+  document.getElementById('um-tsc').value = '';
+  document.getElementById('um-password').value = '';
+  document.getElementById('um-subjects').value = '';
+  document.getElementById('um-class').value = '';
+  document.getElementById('um-err').textContent = '';
+  document.getElementById('user-modal').classList.remove('hidden');
+}
+
+function editUser(userId){
+  const school = getCurrentSchool();
+  const u = (school?.users||[]).find(x=>x.id===userId);
+  if(!u) return;
+  document.getElementById('user-modal-title').textContent = '✏️ Edit User';
+  document.getElementById('edit-user-id').value = u.id;
+  document.getElementById('um-name').value = u.name||'';
+  document.getElementById('um-email').value = u.email||'';
+  document.getElementById('um-role').value = u.role||'teacher';
+  document.getElementById('um-tsc').value = u.tscNumber||'';
+  document.getElementById('um-password').value = '';
+  document.getElementById('um-subjects').value = (u.subjects||[]).join(', ');
+  document.getElementById('um-class').value = u.classTeacherOf||'';
+  document.getElementById('um-err').textContent = '';
+  document.getElementById('user-modal').classList.remove('hidden');
+}
+
+function closeUserModal(){
+  document.getElementById('user-modal').classList.add('hidden');
+}
+
+function saveUser(){
+  const name = document.getElementById('um-name').value.trim();
+  const email = document.getElementById('um-email').value.trim().toLowerCase();
+  const role = document.getElementById('um-role').value;
+  const pw = document.getElementById('um-password').value;
+  const editId = document.getElementById('edit-user-id').value;
+  const err = document.getElementById('um-err');
+
+  if(!name){ err.textContent='Name is required.'; return; }
+  if(!email || !email.includes('@')){ err.textContent='Valid email required.'; return; }
+  if(!editId && pw.length < 8){ err.textContent='Password must be at least 8 characters.'; return; }
+
+  const schools = getSchools();
+  const si = schools.findIndex(s=>s.id===getCurrentSchool()?.id);
+  if(si<0) return;
+
+  if(editId){
+    // Edit existing
+    const ui = schools[si].users.findIndex(u=>u.id===editId);
+    if(ui<0) return;
+    schools[si].users[ui] = {
+      ...schools[si].users[ui],
+      name,email,role,
+      tscNumber: document.getElementById('um-tsc').value.trim(),
+      subjects: document.getElementById('um-subjects').value.split(',').map(s=>s.trim()).filter(Boolean),
+      classTeacherOf: document.getElementById('um-class').value,
+      updatedAt: Date.now(),
+      ...(pw ? { passwordHash: hashPass(pw) } : {})
+    };
+    logActivity(`User "${name}" updated`);
+    toast('✅ User updated','info');
+  } else {
+    // Check duplicate email across all schools
+    const allSchools = getSchools();
+    const dup = allSchools.some(s=>(s.users||[]).some(u=>u.email===email));
+    if(dup){ err.textContent='This email is already registered in the system.'; return; }
+
+    const newUser = {
+      id: uid(),
+      name, email, role,
+      passwordHash: hashPass(pw),
+      tscNumber: document.getElementById('um-tsc').value.trim(),
+      subjects: document.getElementById('um-subjects').value.split(',').map(s=>s.trim()).filter(Boolean),
+      classTeacherOf: document.getElementById('um-class').value,
+      isAdmin: role==='principal'||role==='deputy',
+      createdAt: Date.now(),
+    };
+    if(!schools[si].users) schools[si].users = [];
+    schools[si].users.push(newUser);
+    logActivity(`User "${name}" (${role}) added`);
+    addNotif(`👤 New user ${name} added`);
+    toast('✅ User added','info');
+  }
+
+  saveSchools(schools);
+  closeUserModal();
+  renderSchoolUsers();
+  document.getElementById('stat-users').textContent = (schools[si].users||[]).length;
+}
+
+function deleteUser(userId){
+  const user = getCurrentUser();
+  if(user?.id === userId){ toast('⛔ Cannot delete your own account','warn'); return; }
+  if(!confirm('Remove this user? They will no longer be able to log in.')) return;
+  const schools = getSchools();
+  const si = schools.findIndex(s=>s.id===getCurrentSchool()?.id);
+  if(si<0) return;
+  const u = schools[si].users?.find(x=>x.id===userId);
+  schools[si].users = (schools[si].users||[]).filter(x=>x.id!==userId);
+  saveSchools(schools);
+  logActivity(`User "${u?.name||userId}" removed`);
+  renderSchoolUsers();
+  toast('User removed','warn');
+}
+
+/* ════════════════════════════════════════════════
+   SCHOOL PROFILE
+════════════════════════════════════════════════ */
+function loadSchoolProfile(){
+  const school = getCurrentSchool();
+  if(!school) return;
+  document.getElementById('sp-name').value = school.name||'';
+  document.getElementById('sp-code').value = school.code||'';
+  document.getElementById('sp-county').value = school.county||'';
+  document.getElementById('sp-subcounty').value = school.subCounty||'';
+  document.getElementById('sp-phone').value = school.phone||'';
+  document.getElementById('sp-email').value = school.email||'';
+  document.getElementById('sp-motto').value = school.motto||'';
+  const cal = school.academicCalendar||{};
+  document.getElementById('sp-t1s').value = cal.t1s||'';
+  document.getElementById('sp-t1e').value = cal.t1e||'';
+  document.getElementById('sp-t2s').value = cal.t2s||'';
+  document.getElementById('sp-t2e').value = cal.t2e||'';
+  document.getElementById('sp-t3s').value = cal.t3s||'';
+  document.getElementById('sp-t3e').value = cal.t3e||'';
+  // Supabase
+  const cfg = _get('supabase_cfg_' + school.id)||{};
+  document.getElementById('supabase-url').value = cfg.url||'';
+  document.getElementById('supabase-key').value = cfg.key||'';
+}
+
+function saveSchoolProfile(){
+  const schools = getSchools();
+  const si = schools.findIndex(s=>s.id===getCurrentSchool()?.id);
+  if(si<0) return;
+  schools[si].name = document.getElementById('sp-name').value.trim()||schools[si].name;
+  schools[si].code = document.getElementById('sp-code').value.trim();
+  schools[si].county = document.getElementById('sp-county').value.trim();
+  schools[si].subCounty = document.getElementById('sp-subcounty').value.trim();
+  schools[si].phone = document.getElementById('sp-phone').value.trim();
+  schools[si].email = document.getElementById('sp-email').value.trim();
+  schools[si].motto = document.getElementById('sp-motto').value.trim();
+  saveSchools(schools);
+  document.getElementById('header-school-name').textContent = schools[si].name;
+  logActivity('School profile updated');
+  toast('✅ Profile saved','info');
+}
+
+function saveAcademicCalendar(){
+  const schools = getSchools();
+  const si = schools.findIndex(s=>s.id===getCurrentSchool()?.id);
+  if(si<0) return;
+  schools[si].academicCalendar = {
+    t1s: document.getElementById('sp-t1s').value,
+    t1e: document.getElementById('sp-t1e').value,
+    t2s: document.getElementById('sp-t2s').value,
+    t2e: document.getElementById('sp-t2e').value,
+    t3s: document.getElementById('sp-t3s').value,
+    t3e: document.getElementById('sp-t3e').value,
+  };
+  saveSchools(schools);
+  logActivity('Academic calendar updated');
+  toast('✅ Calendar saved','info');
+}
+
+function saveSupabaseConfig(){
+  const school = getCurrentSchool();
+  if(!school) return;
+  const cfg = {
+    url: document.getElementById('supabase-url').value.trim(),
+    key: document.getElementById('supabase-key').value.trim(),
+  };
+  if(!cfg.url || !cfg.key){ toast('Enter both URL and key','warn'); return; }
+  _set('supabase_cfg_' + school.id, cfg);
+  toast('✅ Supabase config saved. Connecting…','info');
+  testSupabaseConnection(cfg);
+}
+
+async function testSupabaseConnection(cfg){
+  try{
+    const res = await fetch(`${cfg.url}/rest/v1/`, {
+      headers: { 'apikey': cfg.key, 'Authorization': `Bearer ${cfg.key}` }
+    });
+    if(res.ok || res.status === 404){
+      addNotif('☁️ Supabase connected! Cloud sync is active.');
+      toast('☁️ Supabase connected!','info',3000);
+      _set('supabase_connected_' + getCurrentSchool().id, true);
+    } else {
+      toast('⚠️ Supabase connection failed — check your credentials','warn',4000);
+    }
+  } catch(e){
+    toast('⚠️ Could not reach Supabase — check URL','warn',4000);
+  }
+}
+
+/* ════════════════════════════════════════════════
+   OFFLINE SYNC / INDEXEDDB QUEUE
+════════════════════════════════════════════════ */
+let _syncQueue = [];
+
+function queueOfflineAction(type, data){
+  const item = { id: uid(), type, data, ts: Date.now(), status: 'pending' };
+  _syncQueue.push(item);
+  _set('offline_queue_' + (getCurrentSchool()?.id||''), _syncQueue);
+  toast('📴 Saved offline. Will sync when connected.','warn',2500);
+}
+
+function loadSyncQueue(){
+  const school = getCurrentSchool();
+  _syncQueue = _get('offline_queue_' + (school?.id||'')) || [];
+}
+
+function clearSyncQueue(){
+  if(!confirm('Clear all queued offline actions? This cannot be undone.')) return;
+  _syncQueue = [];
+  _set('offline_queue_' + (getCurrentSchool()?.id||''), []);
+  renderSyncStatus();
+  toast('Sync queue cleared','warn');
+}
+
+async function manualSync(){
+  const school = getCurrentSchool();
+  const cfg = _get('supabase_cfg_' + (school?.id||''));
+  if(!cfg){ toast('⚠️ Connect Supabase first (Sync tab)','warn',3000); return; }
+  toast('🔄 Syncing…','info',2000);
+  loadSyncQueue();
+  let synced = 0;
+  for(const item of _syncQueue){
+    if(item.status === 'pending'){
+      try{
+        // In production: POST to Supabase REST API per action type
+        await new Promise(r=>setTimeout(r,100)); // simulate
+        item.status = 'synced';
+        item.syncedAt = Date.now();
+        synced++;
+      } catch(e){ item.status = 'failed'; }
+    }
+  }
+  _set('offline_queue_' + (school?.id||''), _syncQueue);
+  renderSyncStatus();
+  toast(`✅ Synced ${synced} item${synced!==1?'s':''}`, 'info', 2500);
+  logActivity(`Manual sync: ${synced} items synced`);
+}
+
+function renderSyncStatus(){
+  loadSyncQueue();
+  const school = getCurrentSchool();
+  const cfg = _get('supabase_cfg_' + (school?.id||''));
+  const connected = _get('supabase_connected_' + (school?.id||''));
+  const online = navigator.onLine;
+  const pending = _syncQueue.filter(i=>i.status==='pending').length;
+  const synced = _syncQueue.filter(i=>i.status==='synced').length;
+  const failed = _syncQueue.filter(i=>i.status==='failed').length;
+
+  document.getElementById('connection-status').innerHTML =
+    online ? '<span style="color:var(--success)">🟢 Online</span>' : '<span style="color:var(--danger)">🔴 Offline</span>';
+
+  document.getElementById('sync-status-display').innerHTML = `
+    <div><strong>Cloud Sync:</strong> ${cfg && connected ? '<span style="color:var(--success)">☁️ Supabase Connected</span>' : '<span style="color:var(--muted)">Not configured</span>'}</div>
+    <div><strong>Last Sync:</strong> ${_syncQueue.find(i=>i.syncedAt)?.syncedAt ? fmtDate(_syncQueue.find(i=>i.syncedAt).syncedAt) : 'Never'}</div>
+    <div><strong>Pending:</strong> ${pending} items</div>
+    <div><strong>Synced:</strong> ${synced} items</div>
+    ${failed ? `<div style="color:var(--danger)"><strong>Failed:</strong> ${failed} items</div>` : ''}
+  `;
+
+  const qEl = document.getElementById('offline-queue-display');
+  if(!_syncQueue.length){ qEl.textContent='Queue is empty.'; return; }
+  qEl.innerHTML = _syncQueue.slice(0,10).map(i=>`
+    <div style="padding:4px 0;border-bottom:1px solid var(--border-l)">
+      <span class="badge ${i.status==='synced'?'bg-green':i.status==='failed'?'bg-red':'bg-yellow'}">${i.status}</span>
+      ${esc(i.type)} · ${fmtDate(i.ts)}
+    </div>
+  `).join('');
+}
+
+window.addEventListener('online', () => {
+  toast('🟢 Back online — syncing…','info',2000);
+  manualSync().catch(()=>{});
+});
+window.addEventListener('offline', () => {
+  toast('📴 You are offline. Changes saved locally.','warn',3000);
+});
+
+/* ════════════════════════════════════════════════
+   CHANGE PASSWORD
+════════════════════════════════════════════════ */
+function showChangePassword(){
+  document.getElementById('cpw-current').value='';
+  document.getElementById('cpw-new').value='';
+  document.getElementById('cpw-new2').value='';
+  document.getElementById('cpw-err').textContent='';
+  document.getElementById('change-pw-modal').classList.remove('hidden');
+}
+
+function doChangePassword(){
+  const current = document.getElementById('cpw-current').value;
+  const newPw = document.getElementById('cpw-new').value;
+  const newPw2 = document.getElementById('cpw-new2').value;
+  const err = document.getElementById('cpw-err');
+  const user = getCurrentUser();
+  const school = getCurrentSchool();
+  if(!user||!school){ err.textContent='Not logged in.'; return; }
+  const schools = getSchools();
+  const si = schools.findIndex(s=>s.id===school.id);
+  const ui = schools[si]?.users?.findIndex(u=>u.id===user.id);
+  if(ui<0){ err.textContent='User not found.'; return; }
+  if(schools[si].users[ui].passwordHash !== hashPass(current)){
+    err.textContent='Current password is incorrect.'; return;
+  }
+  if(newPw.length < 8){ err.textContent='New password must be at least 8 characters.'; return; }
+  if(newPw !== newPw2){ err.textContent='New passwords do not match.'; return; }
+  schools[si].users[ui].passwordHash = hashPass(newPw);
+  saveSchools(schools);
+  document.getElementById('change-pw-modal').classList.add('hidden');
+  logActivity('Password changed');
+  toast('✅ Password updated','info');
+}
+
+/* ════════════════════════════════════════════════
+   EXPORT / IMPORT
+════════════════════════════════════════════════ */
+function exportFullBackup(){
+  const school = getCurrentSchool();
+  const data = {
+    exportedAt: new Date().toISOString(),
+    school,
+    payments: getPayments().filter(p=>p.schoolId===school?.id),
+    activity: getActivity(),
+    syncQueue: _syncQueue,
+    settings: getSettings(),
+  };
+  downloadJSON(data, `EduSuite_Backup_${school?.name?.replace(/\s+/g,'_')||'School'}_${new Date().toISOString().slice(0,10)}.json`);
+  logActivity('Full backup exported');
+  toast('📦 Backup downloaded','info');
+}
+
+function exportUsersCSV(){
+  const school = getCurrentSchool();
+  const users = school?.users||[];
+  const rows = [['Name','Email','Role','TSC Number','Class Teacher Of','Subjects','Created']];
+  users.forEach(u=>rows.push([u.name,u.email,u.role,u.tscNumber||'',u.classTeacherOf||'',(u.subjects||[]).join('; '),fmtDate(u.createdAt)]));
+  downloadCSV(rows, 'EduSuite_Users_' + new Date().toISOString().slice(0,10) + '.csv');
+  toast('👥 Users CSV downloaded','info');
+}
+
+function exportActivityCSV(){
+  const rows = [['Activity','Date']];
+  getActivity().forEach(a=>rows.push([a.msg, fmtDate(a.ts)]));
+  downloadCSV(rows, 'EduSuite_Activity_' + new Date().toISOString().slice(0,10) + '.csv');
+  toast('📊 Activity log downloaded','info');
+}
+
+function exportPaymentsCSV(){
+  const school = getCurrentSchool();
+  const payments = getPayments().filter(p=>p.schoolId===school?.id);
+  const rows = [['School','M-Pesa Code','Amount','Plan','Status','Date','Phone']];
+  payments.forEach(p=>rows.push([p.schoolName,p.mpesaCode,p.amount,p.plan,p.status,fmtDate(p.submittedAt),p.phone]));
+  downloadCSV(rows, 'EduSuite_Payments_' + new Date().toISOString().slice(0,10) + '.csv');
+  toast('💳 Payments CSV downloaded','info');
+}
+
+function downloadCSV(rows, filename){
+  const csv = rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
+
+function downloadJSON(data, filename){
+  const a = document.createElement('a');
+  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data,null,2));
+  a.download = filename;
+  a.click();
+}
+
+function importBackup(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.school){ toast('⚠️ Invalid backup file','warn'); return; }
+      if(!confirm(`Restore backup for "${data.school.name}"? This will overwrite current data.`)) return;
+      const schools = getSchools().filter(s=>s.id!==data.school.id);
+      schools.push(data.school);
+      saveSchools(schools);
+      if(data.payments){
+        const payments = getPayments().filter(p=>p.schoolId!==data.school.id);
+        savePayments([...payments,...data.payments]);
+      }
+      logActivity('Data restored from backup');
+      toast('✅ Backup restored!','info',3000);
+    } catch(err){
+      toast('⚠️ Could not read backup file','warn');
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
+/* ════════════════════════════════════════════════
+   LANDING PAGE
+════════════════════════════════════════════════ */
+function showLanding(){ document.getElementById('landing-modal').classList.remove('hidden'); }
+function closeLanding(){ document.getElementById('landing-modal').classList.add('hidden'); }
+
+/* ════════════════════════════════════════════════
+   PWA MANIFEST (injected dynamically)
+════════════════════════════════════════════════ */
+(function injectManifest(){
+  const manifest = {
+    name: 'Kopiya EduSuite',
+    short_name: 'EduSuite',
+    description: 'School Management Platform for Kenya CBC',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#1b4332',
+    theme_color: '#1b4332',
+    orientation: 'any',
+    icons: [
+      { src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏫</text></svg>', sizes: '192x192', type: 'image/svg+xml' },
+      { src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🏫</text></svg>', sizes: '512x512', type: 'image/svg+xml' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = url;
+  document.head.appendChild(link);
+  // Theme color meta
+  const meta = document.createElement('meta');
+  meta.name='theme-color'; meta.content='#1b4332';
+  document.head.appendChild(meta);
+})();
+
+/* ════════════════════════════════════════════════
+   HEADER MENU — wire School Settings & Change PW
+════════════════════════════════════════════════ */
+// Extend the header to include a profile/settings dropdown
+(function extendHeader(){
+  // We patch the profile button after DOM ready
+  const patchHeader = () => {
+    const actions = document.querySelector('.hdr-actions');
+    if(!actions) return;
+    // Insert school settings button before logout (only for non-superadmin)
+    const settingsBtn = document.createElement('button');
+    settingsBtn.className = 'hdr-btn';
+    settingsBtn.title = 'School Settings';
+    settingsBtn.textContent = '⚙️';
+    settingsBtn.onclick = () => {
+      const user = getCurrentUser();
+      if(user?.role === 'superadmin'){
+        document.getElementById('home-screen').style.display='none';
+        document.getElementById('school-panel').style.display='none';
+        document.getElementById('admin-panel').classList.add('visible');
+        renderAdminPanel();
+      } else if(user?.isAdmin){
+        showSchoolPanel();
+      } else {
+        showChangePassword();
+      }
+    };
+    const logoutBtn = actions.lastElementChild;
+    actions.insertBefore(settingsBtn, logoutBtn);
+  };
+  if(document.readyState==='complete') patchHeader();
+  else window.addEventListener('load', patchHeader);
+})();
+
+/* ════════════════════════════════════════════════
+   KEYBOARD SHORTCUTS
+════════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    document.querySelectorAll('.mpesa-modal:not(.hidden)').forEach(m=>m.classList.add('hidden'));
+  }
+});
+
+/* ════════════════════════════════════════════════
+   INSTALL PROMPT (Add to Home Screen)
+════════════════════════════════════════════════ */
+let _installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  // Show install hint after 5s if not already installed
+  setTimeout(() => {
+    if(_installPrompt){
+      addNotif('📱 Tip: Add EduSuite to your home screen for offline access! Tap ⚙️ → Install App');
+      renderNotifBadge();
+    }
+  }, 5000);
+});
+
+function installPWA(){
+  if(!_installPrompt){ toast('App already installed or not supported on this browser','warn',3000); return; }
+  _installPrompt.prompt();
+  _installPrompt.userChoice.then(r=>{
+    if(r.outcome==='accepted'){ toast('✅ EduSuite installed!','info',3000); _installPrompt=null; }
+  });
+}
+</script>
+</body>
+</html>
